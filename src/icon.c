@@ -35,6 +35,7 @@
 #include "wcore.h"
 #include "texture.h"
 #include "window.h"
+#include "framewin.h"
 #include "icon.h"
 #include "actions.h"
 #include "stacking.h"
