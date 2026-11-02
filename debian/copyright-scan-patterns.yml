@@ -1,0 +1,15 @@
+ignore:
+  pattern:
+  - configure
+  - ChangeLog
+  - README
+  - Makefile.in
+  - Makefile
+  - COPYING.WTFPL
+  - aclocal.m4
+  - doc/sk/getstyle.1
+  suffixes:
+  - po
+  - xcf
+  - tiff
+  - sk.in

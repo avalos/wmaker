@@ -1,0 +1,25 @@
+checkpatch.pl:
+    'override-license': GPL-2
+m4/libtool.m4:
+    'override-license': FSFULLR
+ltmain.sh:
+    'override-license': GPL-2+ with Libtool exception
+wrlib/load_ppm.c:
+    'override-license': LGPL-2+
+debian/*:
+    license: GPL-2+
+    copyright: |
+      1997, Neil A. Rubin <nar5@po.cwru.edu>
+      1997, Marcelo E. Magallon <mmagallo@debian.org>
+      2011, Rodolfo García Peñas (kix) <kix@kix.es>
+      2015-2026 Doug Torrance <dtorrance@debian.org>
+      2010, 2015-2026 Andreas Metzler <ametzler@debian.org>
+debian/debianfiles/Themes/DebianLegacy.*:
+    license: GPL-1+
+    copyright: |
+      1999 Gary Burke <gfburke@earthlink.net>
+debian/debianfiles/Themes/DebianSwirl.jpg:
+    license: GPL-1+
+    copyright: |
+      1999 Gary Burke <gfburke@earthlink.net>
+

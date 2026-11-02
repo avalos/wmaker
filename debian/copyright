@@ -1,0 +1,718 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Source: https://repo.or.cz/w/wmaker-crm.git
+Upstream-Name: wmaker
+Upstream-Contact:
+ Window Maker developers mailing list <wmaker-dev@googlegroups.com>,
+
+Files: *
+Copyright: 2000, Banlu Kemiyatorn
+License: WTFPL-1
+
+Files: INSTALL
+Copyright: 1994-1996, 1999-2002, 2004-2017, 2020-2025, Free Software
+License: FSFAP
+
+Files: INSTALL-WMAKER
+Copyright: 2015, The Window Maker Team.
+License: GPL-2+
+
+Files: WINGs/Examples/*
+Copyright: 1997-2004, Alfredo K. Kojima
+License: GPL-2+
+
+Files: WINGs/Tests/*
+Copyright: no-info-found
+License: public-domain
+
+Files: WINGs/WINGs/*
+Copyright: 1999-2004, Dan Pascu
+ 1999-2001, Alfredo K. Kojima
+ 1998, scottc
+License: GPL-2+
+
+Files: WINGs/array.c
+Copyright: no-info-found
+License: public-domain
+
+Files: WINGs/data.c
+ WINGs/wconfig.h
+Copyright: 1999-2004, Dan Pascu
+License: GPL-2+
+
+Files: WINGs/error.c
+ WINGs/findfile.c
+ WINGs/memory.c
+Copyright: 1997-2004, Alfredo K. Kojima
+License: GPL-2+
+
+Files: WINGs/error.h
+ WINGs/userdefaults.h
+Copyright: 2013-2015, 2021, 2023, 2026, Window Maker Team
+License: GPL-2+
+
+Files: WINGs/menuparser.c
+ WINGs/menuparser.h
+ WINGs/menuparser_macros.c
+Copyright: 2012, 2013, Christophe Curis
+License: GPL-2+
+
+Files: WINGs/misc.c
+Copyright: 2014, Window Maker Team
+ 2001, Dan Pascu
+License: GPL-2+
+
+Files: WINGs/string.c
+Copyright: 1998, Todd C. Miller <Todd.Miller@courtesan.com>
+License: ISC
+
+Files: WINGs/wruler.c
+Copyright: 1999, 2000, Nwanua Elumeze
+License: GPL-2+
+
+Files: WPrefs.app/Appearance.c
+ WPrefs.app/Configurations.c
+ WPrefs.app/Focus.c
+ WPrefs.app/FontSimple.c
+ WPrefs.app/Icons.c
+ WPrefs.app/KeyboardSettings.c
+ WPrefs.app/KeyboardShortcuts.c
+ WPrefs.app/Menu.c
+ WPrefs.app/MenuPreferences.c
+ WPrefs.app/MouseSettings.c
+ WPrefs.app/Paths.c
+ WPrefs.app/Preferences.c
+ WPrefs.app/TexturePanel.h
+ WPrefs.app/Themes.c
+ WPrefs.app/WPrefs.c
+ WPrefs.app/WPrefs.h
+ WPrefs.app/WindowHandling.c
+ WPrefs.app/Workspace.c
+ WPrefs.app/editmenu.c
+ WPrefs.app/editmenu.h
+ WPrefs.app/main.c
+Copyright: 1997-2004, Alfredo K. Kojima
+License: GPL-2+
+
+Files: WPrefs.app/Docks.c
+Copyright: 2012, Daniel Déchelotte (heavily inspired from file Alfredo K. Kojima)
+License: GPL-2+
+
+Files: WPrefs.app/Expert.c
+Copyright: 2008-2026, Window Maker Team
+ 1997-2003, Alfredo K. Kojima
+License: GPL-2+
+
+Files: WPrefs.app/HotCornerShortcuts.c
+Copyright: 2013-2015, 2021, 2023, 2026, Window Maker Team
+License: GPL-2+
+
+Files: WPrefs.app/TexturePanel.c
+Copyright: 1998-2003, Alfredo K. Kojima
+ 1998, James Thompson
+License: GPL-2+
+
+Files: WPrefs.app/xmodifier.c
+Copyright: (s) from the original XEmacs code are included below.
+License: GPL-2+
+
+Files: checkpatch.pl
+Copyright: 2008-2010, Andy Whitcroft <apw@canonical.com>
+ 2007, 2008, Andy Whitcroft <apw@uk.ibm.com> (new conditions, test suite)
+ 2005, Joel Schopp <jschopp@austin.ibm.com> (the ugly bit)
+ 2001, Dave Jones. (the file handling bit)
+License: GPL-2
+
+Files: compile
+ depcomp
+ missing
+Copyright: 1996-2025, Free Software Foundation, Inc.
+License: GPL-2+ with Autoconf-data exception
+
+Files: config.guess
+ config.sub
+Copyright: 1992-2024, Free Software Foundation, Inc.
+License: GPL-3+ with Autoconf-data exception
+
+Files: debian/*
+Copyright: 2015-2026, Doug Torrance <dtorrance@debian.org>
+ 2011, Rodolfo García Peñas (kix) <kix@kix.es>
+ 2010, 2015-2026, Andreas Metzler <ametzler@debian.org>
+ 1997, Neil A. Rubin <nar5@po.cwru.edu>
+ 1997, Marcelo E. Magallon <mmagallo@debian.org>
+License: GPL-2+
+
+Files: debian/debianfiles/Themes/*
+Copyright: 1999, Gary Burke <gfburke@earthlink.net>
+License: GPL-1+
+
+Files: debian/debianfiles/Themes/Debian.style
+Copyright: 2015-2026, Doug Torrance <dtorrance@debian.org>
+ 2011, Rodolfo García Peñas (kix) <kix@kix.es>
+ 2010, 2015-2026, Andreas Metzler <ametzler@debian.org>
+ 1997, Neil A. Rubin <nar5@po.cwru.edu>
+ 1997, Marcelo E. Magallon <mmagallo@debian.org>
+License: GPL-2+
+
+Files: doc/build/*
+Copyright: 2015, The Window Maker Team.
+License: GPL-2+
+
+Files: install-sh
+Copyright: 1994, X Consortium
+License: X11
+
+Files: ltmain.sh
+Copyright: 1996-2019, 2021-2024, Free Software Foundation, Inc.
+License: GPL-2+ with Libtool exception
+
+Files: m4/*
+Copyright: 2013, 2021, Christophe CURIS
+License: GPL-2+
+
+Files: m4/ax_cflags_gcc_option.m4
+Copyright: 2008, Guido U. Draheim <guidod@gmx.de>
+License: GPL-2+ with Autoconf-2.0~Archive exception
+
+Files: m4/ax_pthread.m4
+Copyright: 2011, Daniel Richard G. <skunk@iSKUNK.ORG>
+ 2008, Steven G. Johnson <stevenj@alum.mit.edu>
+License: GPL-3+ with Autoconf-2.0~Archive exception
+
+Files: m4/ld-version-script.m4
+Copyright: 2008-2015, Free Software Foundation, Inc.
+License: FSFULLR
+
+Files: m4/libtool.m4
+ m4/ltsugar.m4
+Copyright: 1996-2001, 2003-2019, 2021-2024, Free Software
+License: FSFULLR
+
+Files: m4/ltoptions.m4
+ m4/lt~obsolete.m4
+Copyright: 2004, 2005, 2007-2009, 2011-2019, 2021-2024, Free
+License: FSFULLR
+
+Files: m4/ltversion.m4
+Copyright: 2004, 2011-2019, 2021-2024, Free Software Foundation
+License: FSFULLR
+
+Files: m4/windowmaker.m4
+Copyright: 1999-2004, Dan Pascu
+License: GPL-2+
+
+Files: m4/wm_attributes.m4
+ m4/wm_libmath.m4
+Copyright: 2012, 2013, Christophe Curis
+License: GPL-2+
+
+Files: m4/wm_i18n.m4
+Copyright: 2015-2021, The Window Maker Tean
+ 2014, 2015, Christophe CURIS
+License: GPL-2+
+
+Files: m4/wm_libexif.m4
+Copyright: 2013-2015, 2021, 2023, 2026, Window Maker Team
+License: GPL-2+
+
+Files: script/*
+Copyright: 2014-2019, 2021, Window Maker Team
+ 2014, 2015, 2021, Christophe CURIS
+License: GPL-2+
+
+Files: src/*
+Copyright: 1997-2004, Alfredo K. Kojima
+License: GPL-2+
+
+Files: src/WindowMaker.h
+ src/balloon.c
+ src/cycling.h
+ src/event.c
+ src/event.h
+ src/keybind.h
+ src/misc.h
+ src/monitor.h
+ src/placement.h
+ src/startup.h
+ src/switchmenu.h
+ src/window.c
+ src/winmenu.h
+ src/xdnd.c
+ src/xdnd.h
+Copyright: 2008-2026, Window Maker Team
+ 1997-2003, Alfredo K. Kojima
+License: GPL-2+
+
+Files: src/actions.c
+ src/defaults.c
+ src/dialog.c
+ src/dock.c
+ src/rootmenu.c
+Copyright: 2009-2026, Window Maker Team
+ 1998-2003, Dan Pascu
+ 1997-2003, Alfredo K. Kojima
+License: GPL-2+
+
+Files: src/appicon.c
+ src/application.c
+ src/dock.h
+ src/dockedapp.h
+ src/main.h
+ src/menu.c
+ src/stacking.c
+ src/startup.c
+ src/superfluous.c
+ src/winspector.c
+Copyright: 1998-2003, Dan Pascu
+ 1997-2003, Alfredo K. Kojima
+License: GPL-2+
+
+Files: src/colormap.c
+Copyright: Rob Nation and others
+ 1998-2003, Alfredo K. Kojima
+License: GPL-2+
+
+Files: src/keytree.c
+ src/keytree.h
+ src/randr.c
+ src/randr.h
+ src/shutdown.h
+ src/wsmap.h
+Copyright: 2013-2015, 2021, 2023, 2026, Window Maker Team
+License: GPL-2+
+
+Files: src/session.c
+Copyright: 1998-2003, Dan Pascu
+ 1998-2003, Alfredo Kojima
+License: GPL-2+
+
+Files: src/switchmenu.c
+Copyright: 1997-2003, Alfredo K. Kojima
+ 1997, Shige Abe
+License: GPL-2+
+
+Files: src/usermenu.c
+ src/usermenu.h
+Copyright: hmmm... Should I put everybody's name here?
+License: GPL-2+
+
+Files: src/wsmap.c
+Copyright: 2014-2026, Window Maker Team - David Maciejak
+License: GPL-2+
+
+Files: src/xmodifier.c
+Copyright: 1996, Ben Wing.
+ 1995, Sun Microsystems, Inc.
+ 1991-1995, Free Software Foundation, Inc.
+ (s) from the original XEmacs code are included below.
+License: GPL-2+
+
+Files: src/xutil.h
+Copyright: 1998, scottc
+License: GPL-2+
+
+Files: update-changelog.pl
+Copyright: 2014, Window Maker Developers Team
+License: GPL-2+
+
+Files: util/*
+Copyright: 1997-2004, Alfredo K. Kojima
+License: GPL-2+
+
+Files: util/common.h
+Copyright: 1998-2004, Dan Pascu
+ 1997-2003, Alfredo K. Kojima
+License: LGPL-2+
+
+Files: util/convertfonts.c
+Copyright: 1999-2004, Dan Pascu
+License: GPL-2+
+
+Files: util/wm-oldmenu2new
+Copyright: waived; no warranty provided.
+License: UNKNOWN
+ Please fill license UNKNOWN from header of util/wm-oldmenu2new
+
+Files: util/wmgenmenu.c
+Copyright: 2010, Carlos R. Mafra
+License: UNKNOWN
+ Please fill license UNKNOWN from header of util/wmgenmenu.c
+
+Files: util/wmgenmenu.h
+Copyright: 2010, Carlos R. Mafra
+License: GPL-2+
+
+Files: util/wmiv.c
+Copyright: 2014-2026, Window Maker Team - David Maciejak
+License: GPL-2+
+
+Files: util/wmmenugen.c
+ util/wmmenugen.h
+ util/wmmenugen_misc.c
+ util/wmmenugen_parse_wmconfig.c
+ util/wmmenugen_parse_xdg.c
+Copyright: 2010
+License: GPL-2+
+
+Files: util/wmsetbg.c
+Copyright: 1998-2003, Dan Pascu
+ 1997-2003, Alfredo K. Kojima
+License: GPL-2+
+
+Files: util/xdnd.c
+ util/xdnd.h
+Copyright: 1996-2000, Paul Sheer
+License: GPL-2+
+
+Files: wmlib/*
+Copyright: 1991, Free Software Foundation, Inc.
+License: LGPL-2
+
+Files: wmlib/WMaker.h
+ wmlib/app.c
+ wmlib/app.h
+ wmlib/command.c
+ wmlib/event.c
+ wmlib/menu.c
+ wmlib/menu.h
+Copyright: 1997-2003, Alfredo K. Kojima
+License: LGPL-2+
+
+Files: wrlib/*
+Copyright: 1991, Free Software Foundation, Inc.
+License: LGPL-2
+
+Files: wrlib/alpha_combine.c
+Copyright: 1995, Spencer Kimball and Peter Mattis
+License: LGPL-2+
+
+Files: wrlib/color.c
+ wrlib/context.c
+ wrlib/convert.c
+ wrlib/convolve.c
+ wrlib/imgformat.h
+ wrlib/load_gif.c
+ wrlib/load_jpeg.c
+ wrlib/load_png.c
+ wrlib/load_tiff.c
+ wrlib/load_xpm_normalized.c
+ wrlib/misc.c
+ wrlib/raster.c
+ wrlib/rotate.c
+ wrlib/save_xpm.c
+ wrlib/scale.c
+ wrlib/wraster.h.in
+ wrlib/xpixmap.c
+ wrlib/xutil.c
+Copyright: 1997-2003, Alfredo K. Kojima
+License: LGPL-2+
+
+Files: wrlib/convert.h
+ wrlib/flip.c
+ wrlib/load_jxl.c
+ wrlib/load_magick.c
+ wrlib/load_webp.c
+ wrlib/rotate.h
+ wrlib/save_jpeg.c
+ wrlib/save_png.c
+ wrlib/scale.h
+ wrlib/xutil.h
+Copyright: 2014-2021, 2023-2025, Window Maker Team
+License: LGPL-2+
+
+Files: wrlib/draw.c
+ wrlib/gradient.c
+Copyright: 1998-2004, Dan Pascu
+ 1997-2003, Alfredo K. Kojima
+License: LGPL-2+
+
+Files: wrlib/load.c
+ wrlib/load_ppm.c
+ wrlib/load_xpm.c
+ wrlib/save.c
+Copyright: 2013-2025, Window Maker Team
+ 1997-2003, Alfredo K. Kojima
+License: LGPL-2+
+
+Files: wrlib/wr_i18n.h
+Copyright: 2013-2015, 2021, 2023, 2026, Window Maker Team
+License: GPL-2+
+
+License: FSFAP
+ Copying and distribution of this file, with or without modification,
+ are permitted in any medium without royalty provided the copyright
+ notice and this notice are preserved.  This file is offered as-is,
+ without warranty of any kind.
+
+License: FSFULLR
+ This file is free software; the Free Software Foundation gives unlimited
+ permission to copy and/or distribute it, with or without modifications, as
+ long as this notice is preserved.
+
+License: GPL-1+
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 1, or (at your option)
+ any later version.
+ .
+ On Debian systems, the complete text of version 1 of the GNU General
+ Public License can be found in `/usr/share/common-licenses/GPL-1'.
+
+License: GPL-2
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; version 2 dated June, 1991.
+ On Debian systems, the complete text of version 2 of the GNU General
+ Public License can be found in '/usr/share/common-licenses/GPL-2'.
+
+License: GPL-2+
+ This program is free software; you can redistribute it
+ and/or modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later
+ version.
+ .
+ This program is distributed in the hope that it will be
+ useful, but WITHOUT ANY WARRANTY; without even the implied
+ warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ PURPOSE.  See the GNU General Public License for more
+ details.
+ .
+ You should have received a copy of the GNU General Public
+ License along with this package; if not, see
+ <https://www.gnu.org/licenses/>.
+ .
+ On Debian systems, the full text of the GNU General Public
+ License version 2 can be found in the file
+ `/usr/share/common-licenses/GPL-2'.
+
+License: GPL-2+ with Autoconf-2.0~Archive exception
+ This program is free software; you can redistribute it and/or modify it
+ under the terms of the GNU General Public License as published by the
+ Free Software Foundation; either version 2 of the License, or (at your
+ option) any later version.
+ .
+ This program is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License along
+ with this program. If not, see <http://www.gnu.org/licenses/>.
+ .
+ As a special exception, the respective Autoconf Macro's copyright owner
+ gives unlimited permission to copy, distribute and modify the configure
+ scripts that are the output of Autoconf when processing the Macro. You
+ need not follow the terms of the GNU General Public License when using
+ or distributing such scripts, even though portions of the text of the
+ Macro appear in them. The GNU General Public License (GPL) does govern
+ all other use of the material that constitutes the Autoconf Macro.
+ .
+ This special exception to the GPL applies to versions of the Autoconf
+ Macro released by the Autoconf Archive. When you make and distribute a
+ modified version of the Autoconf Macro, you may extend this special
+ exception to the GPL to apply to your modified version as well.
+
+License: GPL-2+ with Autoconf-data exception
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2, or (at your option)
+ any later version.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ .
+ As a special exception to the GNU General Public License, if you
+ distribute this file as part of a program that contains a
+ configuration script generated by Autoconf, you may include it under
+ the same distribution terms that you use for the rest of that program.
+
+License: GPL-2+ with Libtool exception
+ GNU Libtool is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+ .
+ As a special exception to the GNU General Public License, if you
+ distribute this file as part of a program or library that is built
+ using GNU Libtool, you may include this file under the  same
+ distribution terms that you use for the rest of that program.
+ .
+ GNU Libtool is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+License: GPL-3+ with Autoconf-2.0~Archive exception
+ This program is free software: you can redistribute it and/or modify it
+ under the terms of the GNU General Public License as published by the
+ Free Software Foundation, either version 3 of the License, or (at your
+ option) any later version.
+ .
+ This program is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License along
+ with this program. If not, see <http://www.gnu.org/licenses/>.
+ .
+ As a special exception, the respective Autoconf Macro's copyright owner
+ gives unlimited permission to copy, distribute and modify the configure
+ scripts that are the output of Autoconf when processing the Macro. You
+ need not follow the terms of the GNU General Public License when using
+ or distributing such scripts, even though portions of the text of the
+ Macro appear in them. The GNU General Public License (GPL) does govern
+ all other use of the material that constitutes the Autoconf Macro.
+ .
+ This special exception to the GPL applies to versions of the Autoconf
+ Macro released by the Autoconf Archive. When you make and distribute a
+ modified version of the Autoconf Macro, you may extend this special
+ exception to the GPL to apply to your modified version as well.
+
+License: GPL-3+ with Autoconf-data exception
+ This file is free software; you can redistribute it and/or modify it
+ under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ .
+ This program is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program; if not, see <https://www.gnu.org/licenses/>.
+ .
+ As a special exception to the GNU General Public License, if you
+ distribute this file as part of a program that contains a
+ configuration script generated by Autoconf, you may include it under
+ the same distribution terms that you use for the rest of that
+ program.  This Exception is an additional permission under section 7
+ of the GNU General Public License, version 3 ("GPLv3").
+
+License: ISC
+ The ISC License
+ .
+ Copyright (c) 2026 by the copyright holder
+ .
+ Permission to use, copy, modify, and/or distribute this software for any
+ purpose with or without fee is hereby granted, provided that the above
+ copyright notice and this permission notice appear in all copies.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+License: LGPL-2
+ This program is free software; you can redistribute it and/or modify it
+ under the terms of the GNU Library General Public License as published by the
+ Free Software Foundation; version 2 of the License.
+ On Debian systems, the complete text of version 2 of the GNU Library
+ General Public License can be found in '/usr/share/common-licenses/LGPL-2'.
+
+License: LGPL-2+
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Library General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
+ .
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ Library General Public License for more details.
+ .
+ You should have received a copy of the GNU Library General Public
+ License along with this library; if not, see
+ <https://www.gnu.org/licenses/>.
+ .
+ On Debian systems, the full text of the GNU Library General Public
+ License version 2 can be found in the file
+ `/usr/share/common-licenses/LGPL-2'.
+
+License: WTFPL-1
+ do What The Fuck you want to Public License
+ .
+ Version 1.0, March 2000
+ Copyright (C) 2000 Banlu Kemiyatorn (]d).
+ 136 Nives 7 Jangwattana 14 Laksi Bangkok
+ Everyone is permitted to copy and distribute verbatim copies
+ of this license document, but changing it is not allowed.
+ .
+ Ok, the purpose of this license is simple
+ and you just
+ .
+ DO WHAT THE FUCK YOU WANT TO.
+
+License: X11
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to
+ deal in the Software without restriction, including without limitation the
+ rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ sell copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ .
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+ X CONSORTIUM BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+ AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNEC-
+ TION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ .
+ Except as contained in this notice, the name of the X Consortium shall not
+ be used in advertising or otherwise to promote the sale, use or other deal-
+ ings in this Software without prior written authorization from the X Consor-
+ tium.
+
+License: public-domain
+ This code is released to the Public Domain.
+
+Files: WindowMaker/Icons/BitchX.tiff WindowMaker/Icons/defaultAppIcon.tiff
+       WindowMaker/Icons/GNUterm.tiff WindowMaker/Icons/defaultterm.tiff
+       WindowMaker/Icons/draw.tiff WindowMaker/Icons/linuxterm.tiff
+       WindowMaker/Icons/mixer.tiff WindowMaker/Icons/notepad.tiff
+       WindowMaker/Icons/pdf.tiff WindowMaker/Icons/ps.tiff
+       WindowMaker/Icons/real.tiff WindowMaker/Icons/sgiterm.tiff
+       WindowMaker/Icons/staroffice2.tiff WindowMaker/Icons/timer.tiff
+       WindowMaker/Icons/wilber.tiff WindowMaker/Icons/write.tiff
+       WindowMaker/Icons/xdvi.tiff WindowMaker/Icons/xv.tiff
+Copyright: 1997, Marco van Hylckama Vlieg <marco@windowmaker.info>
+License: attribution
+ They may be distributed freely and/or modified as long as the original
+ Author is mentioned!
+
+Files: WindowMaker/Icons/GNUstepGlow.tiff WindowMaker/Icons/GNUstepGlow.xpm
+       WindowMaker/Icons/Magnify.tiff WindowMaker/Icons/Magnify.xpm
+       WindowMaker/Icons/Terminal.tiff WindowMaker/Icons/Terminal.xpm
+       WindowMaker/Icons/TerminalGNUstep.tiff WindowMaker/Icons/TerminalGNUstep.xpm
+       WindowMaker/Icons/TerminalLinux.tiff WindowMaker/Icons/TerminalLinux.xpm
+       WindowMaker/Icons/Ear.png WindowMaker/Icons/Ftp.png WindowMaker/Icons/ICQ.png
+       WindowMaker/Icons/Jabber.png WindowMaker/Icons/Mozilla.png
+       WindowMaker/Icons/Pen.png WindowMaker/Icons/Pencil.png
+       WindowMaker/Icons/Shell.png WindowMaker/Icons/Speaker.png
+       WindowMaker/Icons/XChat.png
+       WPrefs.app/tiff/msty1.tiff WPrefs.app/tiff/msty2.tiff WPrefs.app/tiff/msty3.tiff
+       WPrefs.app/xpm/msty1.xpm WPrefs.app/xpm/msty2.xpm WPrefs.app/xpm/msty3.xpm
+       WPrefs.app/WPrefs.tiff WPrefs.app/WPrefs.xpm WPrefs.app/tiff/tdel.tiff
+       WPrefs.app/tiff/tedit.tiff WPrefs.app/tiff/textr.tiff WPrefs.app/tiff/tnew.tiff
+       WPrefs.app/xpm/tdel.xpm WPrefs.app/xpm/tedit.xpm WPrefs.app/xpm/textr.xpm
+       WPrefs.app/xpm/tnew.xpm WINGs/Resources/defaultIcon.tiff
+       WINGs/Resources/Images.tiff WINGs/Resources/Images.xpm
+       WINGs/Resources/defaultIcon.xpm WINGs/Resources/Images.xcf
+Copyright: 2000, Banlu Kemiyatorn
+License: WTFPL-1
+
