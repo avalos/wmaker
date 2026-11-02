@@ -52,6 +52,7 @@ void wUnshadeWindow(WWindow *wwin);
 
 void wIconifyWindow(WWindow *wwin);
 void wDeiconifyWindow(WWindow *wwin, Bool bringToCurrentWorkspace);
+void captureWindowPreview(WWindow *wwin);
 
 void wSelectWindows(WScreen *scr, XEvent *ev);
 

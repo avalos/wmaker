@@ -137,6 +137,10 @@ void wSetFocusTo(WScreen *scr, WWindow *wwin)
 
 	old_focused = old_scr->focused_window;
 
+	/* Refresh the preview of the window that is about to lose the focus. */
+	if (old_focused && old_focused != wwin && old_focused->flags.mapped)
+		captureWindowPreview(old_focused);
+
 	w_global.timestamp.focus_change = timestamp;
 
 	if (old_focused)
@@ -1485,6 +1489,113 @@ static int getAnimationGeometry(WWindow *wwin, int *ix, int *iy, int *iw, int *i
 }
 #endif	/* USE_ANIMATIONS */
 
+static void captureWindowPreviewNow(WWindow *wwin)
+{
+	WIcon *icon;
+	WScreen *scr;
+	XWindowAttributes attribs;
+	XImage *pimg;
+	RImage *mini_preview;
+	unsigned int w, h;
+	int x, y;
+	Window baz;
+
+	if (!wwin || !(icon = wwin->icon))
+		return;
+
+	icon->preview_handler = NULL;
+
+	/* Only a moving, visible window can be captured. Not being able to
+	 * capture it then is expected, so it is not a failure. */
+	if (!wwin->flags.mapped || wwin->flags.shaded || wwin->flags.miniaturized)
+		return;
+
+	if (!wwin->client_win)
+		goto fallback;
+
+	if (!XGetWindowAttributes(dpy, wwin->client_win, &attribs))
+		return;
+
+	if (attribs.map_state != IsViewable)
+		return;
+
+	scr = wwin->screen_ptr;
+
+	XRaiseWindow(dpy, wwin->frame->core->window);
+	XTranslateCoordinates(dpy, wwin->client_win, scr->root_win, 0, 0, &x, &y, &baz);
+
+	w = attribs.width;
+	h = attribs.height;
+
+	if (x - attribs.x + attribs.width > scr->scr_width)
+		w = scr->scr_width - x + attribs.x;
+
+	if (y - attribs.y + attribs.height > scr->scr_height)
+		h = scr->scr_height - y + attribs.y;
+
+	if (w == 0 || h == 0)
+		goto fallback;
+
+	pimg = XGetImage(dpy, wwin->client_win, 0, 0, w, h, AllPlanes, ZPixmap);
+	if (!pimg)
+		goto fallback;
+
+	mini_preview = RCreateImageFromXImage(scr->rcontext, pimg, NULL);
+	XDestroyImage(pimg);
+
+	if (!mini_preview)
+		goto fallback;
+
+	set_icon_minipreview(icon, mini_preview);
+	RReleaseImage(mini_preview);
+	return;
+
+      fallback:
+	set_icon_image_from_database(icon, wwin->wm_instance, wwin->wm_class, NULL);
+	wIconUpdate(icon);
+
+	if (!icon->preview_failed) {
+		const char *title;
+		char title_buf[32];
+
+		icon->preview_failed = 1;
+
+		if (wwin->frame && wwin->frame->title) {
+			title = wwin->frame->title;
+		} else {
+			snprintf(title_buf, sizeof(title_buf), "(id=0x%lx)", wwin->client_win);
+			title = title_buf;
+		}
+		wwarning(_("creation of mini-preview failed for window \"%s\""), title);
+	}
+}
+
+static void captureWindowPreviewIdle(void *data)
+{
+	captureWindowPreviewNow((WWindow *)data);
+}
+
+void captureWindowPreview(WWindow *wwin)
+{
+	if (!wwin || !wwin->icon)
+		return;
+
+	if (wwin->icon->preview_handler)
+		return;
+
+	wwin->icon->preview_handler = WMAddTimerHandler(0, captureWindowPreviewIdle, wwin);
+}
+
+static void flushWindowPreview(WWindow *wwin)
+{
+	if (!wwin || !wwin->icon || !wwin->icon->preview_handler)
+		return;
+
+	WMDeleteTimerHandler(wwin->icon->preview_handler);
+	wwin->icon->preview_handler = NULL;
+	captureWindowPreviewNow(wwin);
+}
+
 void wIconifyWindow(WWindow *wwin)
 {
 	XWindowAttributes attribs;
@@ -1526,50 +1637,11 @@ void wIconifyWindow(WWindow *wwin)
 				wIconSetupFused(wwin->icon);
 			wwin->icon->mapped = 1;
 			icon_created = True;
-
-			/* extract the window screenshot every time, as the option can be enable anytime */
-			if (wwin->client_win && wwin->flags.mapped) {
-				RImage *mini_preview;
-				XImage *pimg;
-				unsigned int w, h;
-				int x, y;
-				Window baz;
-
-				XRaiseWindow(dpy, wwin->frame->core->window);
-				XTranslateCoordinates(dpy, wwin->client_win, wwin->screen_ptr->root_win, 0, 0, &x, &y, &baz);
-
-				w = attribs.width;
-				h = attribs.height;
-
-				if (x - attribs.x + attribs.width > wwin->screen_ptr->scr_width)
-					w = wwin->screen_ptr->scr_width - x + attribs.x;
-
-				if (y - attribs.y + attribs.height > wwin->screen_ptr->scr_height)
-					h = wwin->screen_ptr->scr_height - y + attribs.y;
-
-				pimg = XGetImage(dpy, wwin->client_win, 0, 0, w, h, AllPlanes, ZPixmap);
-				if (pimg) {
-					mini_preview = RCreateImageFromXImage(wwin->screen_ptr->rcontext, pimg, NULL);
-					XDestroyImage(pimg);
-
-					if (mini_preview) {
-						set_icon_minipreview(wwin->icon, mini_preview);
-						RReleaseImage(mini_preview);
-					} else {
-						const char *title;
-						char title_buf[32];
-
-						if (wwin->frame->title) {
-							title = wwin->frame->title;
-						} else {
-							snprintf(title_buf, sizeof(title_buf), "(id=0x%lx)", wwin->client_win);
-							title = title_buf;
-						}
-						wwarning(_("creation of mini-preview failed for window \"%s\""), title);
-					}
-				}
-			}
 		}
+
+		/* Snapshot the window before it goes away. */
+		captureWindowPreview(wwin);
+		flushWindowPreview(wwin);
 	}
 
 	wwin->flags.miniaturized = 1;

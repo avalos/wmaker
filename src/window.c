@@ -1812,6 +1812,8 @@ void wWindowMap(WWindow *wwin)
 
 		wwin->flags.mapped = 1;
 	}
+
+	captureWindowPreview(wwin);
 }
 
 void wWindowUnmap(WWindow *wwin)

@@ -573,6 +573,10 @@ void wWorkspaceForceChange(WScreen * scr, int workspace)
 						tmp->icon->mapped = 1;
 						XMapWindow(dpy, tmp->icon->core->window);
 					}
+
+					/* Windows that just appeared on this workspace get
+					 * a fresh preview. */
+					captureWindowPreview(tmp);
 				}
 			}
 			tmp = tmp->prev;

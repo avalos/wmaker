@@ -213,6 +213,8 @@ static WIcon *icon_create_core(WScreen *scr, int coord_x, int coord_y)
 	icon->file = NULL;
 	icon->file_image = NULL;
 	icon->icon_win = None;
+	icon->preview_handler = NULL;
+	icon->preview_failed = 0;
 
 	return icon;
 }
@@ -226,6 +228,9 @@ void wIconDestroy(WIcon *icon)
 
 	if (icon->handlerID)
 		WMDeleteTimerHandler(icon->handlerID);
+
+	if (icon->preview_handler)
+		WMDeleteTimerHandler(icon->preview_handler);
 
 	if (icon->icon_win) {
 		int x = 0, y = 0;
@@ -360,6 +365,8 @@ void wIconChangeTitle(WIcon *icon, WWindow *wwin)
 	if (!icon->icon_name)
 		if (!wGetIconName(dpy, wwin->client_win, &icon->icon_name))
 			icon->icon_name = wNETWMGetWindowName(wwin->client_win);
+
+	captureWindowPreview(wwin);
 }
 
 RImage *wIconValidateIconSize(RImage *icon, int max_size)

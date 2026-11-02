@@ -54,6 +54,8 @@ typedef struct WIcon {
 
 	WMHandlerID	handlerID;	/* timer handler ID for cycling select
 					 * color */
+	WMHandlerID	preview_handler; /* idle timer for the preview capture */
+	unsigned int	preview_failed:1; /* a capture failed once (logged) */
 } WIcon;
 
 WIcon *icon_create_for_dock(WScreen *scr, const char *command, const char *wm_instance, const char *wm_class, int tile);
