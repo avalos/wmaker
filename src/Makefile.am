@@ -39,6 +39,8 @@ wmaker_SOURCES = 	\
 	extend_pixmaps.h \
 	framewin.c \
 	framewin.h \
+	fusedicons.c \
+	fusedicons.h \
 	geomview.c \
 	geomview.h \
 	osdep.h \
