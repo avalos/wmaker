@@ -163,7 +163,7 @@ void wIconSetupFused(WIcon *icon)
 {
 	icon->core->descriptor.parent_type = WCLASS_FUSED_WINDOW_ICON;
 	icon->core->descriptor.handle_expose = miniwindowExpose;
-	icon->core->descriptor.handle_mousedown = miniwindowMouseDown;
+	icon->core->descriptor.handle_mousedown = fusedIconMouseDown;
 }
 
 WIcon *icon_create_for_dock(WScreen *scr, const char *command, const char *wm_instance, const char *wm_class, int tile)
@@ -982,6 +982,138 @@ static void miniwindowMouseDown(WObjDescriptor *desc, XEvent *event)
 				miniwindowDblClick(desc, event);
 			return;
 
+		}
+	}
+}
+
+static void revealFusedWindow(WWindow *wwin, Bool bringHere)
+{
+	if (bringHere && wwin->frame->workspace != wwin->screen_ptr->current_workspace)
+		wWindowChangeWorkspace(wwin, wwin->screen_ptr->current_workspace);
+
+	wMakeWindowVisible(wwin);
+}
+
+void fusedIconMouseDown(WObjDescriptor *desc, XEvent *event)
+{
+	WIcon *icon = desc->parent;
+	WWindow *wwin = icon->owner;
+	WScreen *scr = icon->core->screen_ptr;
+	WApplication *wapp;
+	XEvent ev;
+	int x, y;
+	int dx = event->xbutton.x, dy = event->xbutton.y;
+	int grabbed = 0;
+	int clickButton = event->xbutton.button;
+	Bool hasMoved = False;
+
+	if (WCHECK_STATE(WSTATE_MODAL))
+		return;
+
+	assert(wwin != NULL);
+
+	x = wwin->icon_x;
+	y = wwin->icon_y;
+	wapp = wApplicationOf(wwin->main_window);
+
+	if (IsDoubleClick(scr, event)) {
+		if (event->xbutton.button == Button1)
+			revealFusedWindow(wwin, event->xbutton.state & ShiftMask);
+		return;
+	}
+
+	switch (event->xbutton.button) {
+	case Button1:
+		break;
+	case Button2:
+		if (wapp)
+			relaunchApplication(wapp);
+		return;
+	case Button3:
+		{
+			WObjDescriptor *mdesc;
+
+			if (!wapp)
+				return;
+
+			OpenWindowIconMenu(wwin, event->xbutton.x_root, event->xbutton.y_root);
+			if (!scr->fused_icon_menu)
+				return;
+
+			mdesc = &scr->fused_icon_menu->menu->descriptor;
+			event->xbutton.send_event = True;
+			(*mdesc->handle_mousedown) (mdesc, event);
+
+			return;
+		}
+	default:
+		return;
+	}
+
+	if (wapp && wapp->app_icon && wapp->app_icon->icon == icon && wapp->app_icon->dock) {
+		wHandleAppIconMove(wapp->app_icon, event);
+		return;
+	}
+
+	if (event->xbutton.state & MOD_MASK)
+		wLowerFrame(icon->core);
+	else
+		wRaiseFrame(icon->core);
+
+	if (XGrabPointer(dpy, icon->core->window, False, ButtonMotionMask
+			 | ButtonReleaseMask | ButtonPressMask, GrabModeAsync,
+			 GrabModeAsync, None, None, CurrentTime) != GrabSuccess) {
+	}
+	while (1) {
+		WMMaskEvent(dpy, PointerMotionMask | ButtonReleaseMask | ButtonPressMask
+			    | ButtonMotionMask | ExposureMask, &ev);
+		switch (ev.type) {
+		case Expose:
+			WMHandleEvent(&ev);
+			break;
+
+		case MotionNotify:
+			hasMoved = True;
+			if (!grabbed) {
+				if (abs(dx - ev.xmotion.x) >= MOVE_THRESHOLD
+				    || abs(dy - ev.xmotion.y) >= MOVE_THRESHOLD) {
+					XChangeActivePointerGrab(dpy, ButtonMotionMask
+								 | ButtonReleaseMask | ButtonPressMask,
+								 wPreferences.cursor[WCUR_MOVE], CurrentTime);
+					grabbed = 1;
+				} else {
+					break;
+				}
+			}
+			x = ev.xmotion.x_root - dx;
+			y = ev.xmotion.y_root - dy;
+			XMoveWindow(dpy, icon->core->window, x, y);
+			break;
+
+		case ButtonPress:
+			break;
+
+		case ButtonRelease:
+			if (ev.xbutton.button != clickButton)
+				break;
+
+			if (wwin->icon_x != x || wwin->icon_y != y)
+				wwin->flags.icon_moved = 1;
+
+			XMoveWindow(dpy, icon->core->window, x, y);
+
+			wwin->icon_x = x;
+			wwin->icon_y = y;
+			XUngrabPointer(dpy, CurrentTime);
+
+			if (wPreferences.auto_arrange_icons)
+				wArrangeIcons(wwin->screen_ptr, True);
+
+			if (event->xbutton.state & ShiftMask)
+				revealFusedWindow(wwin, True);
+			else if (wPreferences.single_click && !hasMoved)
+				revealFusedWindow(wwin, False);
+			return;
 		}
 	}
 }

@@ -59,6 +59,7 @@ typedef struct WIcon {
 WIcon *icon_create_for_dock(WScreen *scr, const char *command, const char *wm_instance, const char *wm_class, int tile);
 WIcon *icon_create_for_wwindow(WWindow *wwin);
 void wIconSetupFused(WIcon *icon);
+void fusedIconMouseDown(WObjDescriptor *desc, XEvent *event);
 
 void set_icon_image_from_database(WIcon *icon, const char *wm_instance, const char *wm_class, const char *command);
 void wIconDestroy(WIcon *icon);

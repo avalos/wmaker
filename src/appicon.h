@@ -86,4 +86,7 @@ WAppIcon *wAppIconFor(Window window);
 
 void appIconMouseDown(WObjDescriptor * desc, XEvent * event);
 
+WMenu *createApplicationMenu(WScreen *scr);
+void relaunchApplication(WApplication *wapp);
+
 #endif

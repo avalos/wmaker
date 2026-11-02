@@ -241,6 +241,7 @@ typedef struct _WScreen {
     struct WMenu *workspace_menu;      /* workspace operation */
     struct WMenu *window_menu;	       /* window command menu */
     struct WMenu *icon_menu;	       /* icon/appicon menu */
+    struct WMenu *fused_icon_menu;     /* combined application and window menu */
     struct WMenu *workspace_submenu;   /* workspace list for window_menu */
 
     struct WDock *dock;		       /* the application dock */

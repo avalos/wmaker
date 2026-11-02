@@ -461,7 +461,7 @@ void save_appicon(WAppIcon *aicon)
 #define canBeDocked(wwin)  ((wwin) && ((wwin)->wm_class||(wwin)->wm_instance))
 
 /* main_window may not have the full command line; try to find one which does */
-static void relaunchApplication(WApplication *wapp)
+void relaunchApplication(WApplication *wapp)
 {
 	WScreen *scr;
 	WWindow *wlist, *next;
@@ -603,7 +603,7 @@ static void killCallback(WMenu * menu, WMenuEntry * entry)
 	WCHANGE_STATE(WSTATE_NORMAL);
 }
 
-static WMenu *createApplicationMenu(WScreen *scr)
+WMenu *createApplicationMenu(WScreen *scr)
 {
 	WMenu *menu;
 
