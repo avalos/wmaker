@@ -138,6 +138,7 @@ static WDECallbackUpdate setHightlight;
 static WDECallbackUpdate setHightlightText;
 static WDECallbackUpdate setKeyGrab;
 static WDECallbackUpdate setDoubleClick;
+static WDECallbackUpdate setFuseWindowIconGroupThreshold;
 static WDECallbackUpdate setIconPosition;
 static WDECallbackUpdate setWorkspaceMapBackground;
 
@@ -410,6 +411,13 @@ WDefaultEntry optionList[] = {
 	    &wPreferences.workspace_border_size, getInt, updateUsableArea, NULL, NULL},
 	{"StickyIcons", "NO", NULL,
 	    &wPreferences.sticky_icons, getBool, setStickyIcons, NULL, NULL},
+	{"FuseWindowIcons", "YES", NULL,
+	    &wPreferences.fuse_window_icons, getBool, NULL, NULL, NULL},
+	{"FuseWindowIconGrouping", "YES", NULL,
+	    &wPreferences.fuse_window_icon_grouping, getBool, NULL, NULL, NULL},
+	{"FuseWindowIconGroupThreshold", "10", NULL,
+	    &wPreferences.fuse_window_icon_group_threshold, getInt,
+	    setFuseWindowIconGroupThreshold, NULL, NULL},
 	{"SaveSessionOnExit", "NO", NULL,
 	    &wPreferences.save_session_on_exit, getBool, NULL, NULL, NULL},
 	{"WrapMenus", "NO", NULL,
@@ -3781,6 +3789,23 @@ static int setDoubleClick(WScreen *scr, WDefaultEntry *entry, void *tdata, void 
 		*(int *)foo = 1;
 
 	W_setconf_doubleClickDelay(*value);
+
+	return 0;
+}
+
+static int setFuseWindowIconGroupThreshold(WScreen *scr, WDefaultEntry *entry, void *tdata, void *foo)
+{
+	int *value = tdata;
+
+	/* Parameter not used, but tell the compiler that it is ok */
+	(void) entry;
+	(void) scr;
+	(void) foo;
+
+	if (*value < 1)
+		*value = 1;
+
+	wPreferences.fuse_window_icon_group_threshold = *value;
 
 	return 0;
 }

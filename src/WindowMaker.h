@@ -404,6 +404,8 @@ extern struct WPreferences {
 	char sticky_icons;                 /* If miniwindows will be onmipresent */
 	char dont_confirm_kill;            /* do not confirm Kill application */
 	char disable_miniwindows;
+	char fuse_window_icons;            /* one icon per window instead of per application */
+	char fuse_window_icon_grouping;    /* group windows of one application behind one icon */
 	char enable_workspace_pager;
 	char ignore_gtk_decoration_hints;
 
@@ -466,6 +468,7 @@ extern struct WPreferences {
 	char strict_windoze_cycle;          /* don't close switch panel when shift is released */
 	char panel_only_open;               /* Only open the switch panel; don't switch */
 	int minipreview_size;               /* Size of Mini-Previews in pixels */
+	int fuse_window_icon_group_threshold; /* Window count above which grouping replaces per-window icons */
 
 	/* All delays here are in ms. 0 means instant auto-action. */
 	int clip_auto_raise_delay;          /* Delay after which the clip will be raised when entered */
