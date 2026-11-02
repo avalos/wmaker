@@ -49,6 +49,7 @@
 #include "placement.h"
 #include "misc.h"
 #include "event.h"
+#include "fusedicons.h"
 
 
 #ifndef HAVE_FLOAT_MATHFUNC
@@ -1664,7 +1665,7 @@ void wIconifyWindow(WWindow *wwin)
 		wArrangeIcons(wwin->screen_ptr, True);
 }
 
-void wDeiconifyWindow(WWindow *wwin)
+void wDeiconifyWindow(WWindow *wwin, Bool bringToCurrentWorkspace)
 {
 	/* Let's avoid changing workspace while deiconifying */
 	w_global.ignore_workspace_change = True;
@@ -1673,7 +1674,9 @@ void wDeiconifyWindow(WWindow *wwin)
 	int netwm_hidden = wwin->flags.net_show_desktop &&
 	    wwin->frame->workspace != wwin->screen_ptr->current_workspace;
 
-	if (!netwm_hidden)
+	if (!netwm_hidden &&
+	    fusedIconBringsWindowHere(wPreferences.fuse_window_icons,
+				      bringToCurrentWorkspace))
 		wWindowChangeWorkspace(wwin, wwin->screen_ptr->current_workspace);
 
 	if (!wwin->flags.miniaturized) {
@@ -1685,7 +1688,7 @@ void wDeiconifyWindow(WWindow *wwin)
 		WWindow *owner = recursiveTransientFor(wwin);
 
 		if (owner && owner->flags.miniaturized) {
-			wDeiconifyWindow(owner);
+			wDeiconifyWindow(owner, bringToCurrentWorkspace);
 			wSetFocusTo(wwin->screen_ptr, wwin);
 			wRaiseFrame(wwin->frame->core);
 			w_global.ignore_workspace_change = False;
@@ -2063,7 +2066,7 @@ void wUnhideApplication(WApplication *wapp, Bool miniwindows, Bool bringToCurren
 					wWindowChangeWorkspace(wlist, scr->current_workspace);
 				wlist->flags.hidden = 0;
 				if (miniwindows && wlist->frame->workspace == scr->current_workspace)
-					wDeiconifyWindow(wlist);
+					wDeiconifyWindow(wlist, bringToCurrentWS);
 				WMPostNotificationName(WMNChangedState, wlist, "hide");
 			} else if (wlist->flags.shaded) {
 				if (bringToCurrentWS)
@@ -2119,14 +2122,14 @@ void wShowAllWindows(WScreen *scr)
 		    (scr->current_workspace == wwin->frame->workspace || IS_OMNIPRESENT(wwin))) {
 			if (wwin->flags.miniaturized) {
 				wwin->flags.skip_next_animation = 1;
-				wDeiconifyWindow(wwin);
+				wDeiconifyWindow(wwin, False);
 			} else if (wwin->flags.hidden) {
 				wapp = wApplicationOf(wwin->main_window);
 				if (wapp) {
 					wUnhideApplication(wapp, False, False);
 				} else {
 					wwin->flags.skip_next_animation = 1;
-					wDeiconifyWindow(wwin);
+					wDeiconifyWindow(wwin, False);
 				}
 			}
 		}
@@ -2357,7 +2360,7 @@ void wMakeWindowVisible(WWindow *wwin)
 		}
 	}
 	if (wwin->flags.miniaturized) {
-		wDeiconifyWindow(wwin);
+		wDeiconifyWindow(wwin, False);
 	} else {
 		if (!WFLAGP(wwin, no_focusable))
 			wSetFocusTo(wwin->screen_ptr, wwin);

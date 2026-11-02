@@ -268,7 +268,7 @@ static void execMenuCommand(WMenu * menu, WMenuEntry * entry)
 
 	case MC_MINIATURIZE:
 		if (wwin->flags.miniaturized) {
-			wDeiconifyWindow(wwin);
+			wDeiconifyWindow(wwin, False);
 		} else {
 			if (wwin->protocols.MINIATURIZE_WINDOW) {
 				wClientSendProtocol(wwin, w_global.atom.gnustep.wm_miniaturize_window,

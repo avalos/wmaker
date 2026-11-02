@@ -638,7 +638,7 @@ static void handleMapRequest(XEvent * ev)
 		}
 		/* deiconify window */
 		if (wwin->flags.miniaturized) {
-			wDeiconifyWindow(wwin);
+			wDeiconifyWindow(wwin, False);
 		} else if (wwin->flags.hidden) {
 			WApplication *wapp = wApplicationOf(wwin->main_window);
 			/* go to the last workspace that the user worked on the app */
@@ -933,7 +933,7 @@ static void handleMapNotify(XEvent * event)
 	wwin = wWindowFor(event->xmap.event);
 	if (wwin && wwin->client_win == event->xmap.event) {
 		if (wwin->flags.miniaturized) {
-			wDeiconifyWindow(wwin);
+			wDeiconifyWindow(wwin, False);
 		} else {
 			XGrabServer(dpy);
 			wWindowMap(wwin);

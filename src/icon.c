@@ -886,7 +886,7 @@ static void miniwindowDblClick(WObjDescriptor *desc, XEvent *event)
 
 	assert(icon->owner != NULL);
 
-	wDeiconifyWindow(icon->owner);
+	wDeiconifyWindow(icon->owner, False);
 }
 
 static void miniwindowMouseDown(WObjDescriptor *desc, XEvent *event)
@@ -988,10 +988,35 @@ static void miniwindowMouseDown(WObjDescriptor *desc, XEvent *event)
 
 static void revealFusedWindow(WWindow *wwin, Bool bringHere)
 {
-	if (bringHere && wwin->frame->workspace != wwin->screen_ptr->current_workspace)
-		wWindowChangeWorkspace(wwin, wwin->screen_ptr->current_workspace);
+	WScreen *scr = wwin->screen_ptr;
 
-	wMakeWindowVisible(wwin);
+	if (!bringHere) {
+		wMakeWindowVisible(wwin);
+		return;
+	}
+
+	if (wwin->frame->workspace != scr->current_workspace)
+		wWindowChangeWorkspace(wwin, scr->current_workspace);
+
+	if (wwin->flags.shaded)
+		wUnshadeWindow(wwin);
+
+	if (wwin->flags.hidden) {
+		WApplication *app = wApplicationOf(wwin->main_window);
+
+		if (app) {
+			app->last_focused = wwin;
+			wUnhideApplication(app, False, bringHere);
+		}
+	}
+
+	if (wwin->flags.miniaturized) {
+		wDeiconifyWindow(wwin, bringHere);
+	} else {
+		if (!WFLAGP(wwin, no_focusable))
+			wSetFocusTo(scr, wwin);
+		wRaiseFrame(wwin->frame->core);
+	}
 }
 
 void fusedIconMouseDown(WObjDescriptor *desc, XEvent *event)
