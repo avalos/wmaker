@@ -61,7 +61,8 @@ iconPosition(WCoreWindow *wcore, int sx1, int sy1, int sx2, int sy2,
 		*retY = ((WAppIcon *) parent)->y_pos;
 
 		ok = 1;
-	} else if (wcore->descriptor.parent_type == WCLASS_MINIWINDOW &&
+	} else if ((wcore->descriptor.parent_type == WCLASS_MINIWINDOW
+		    || wcore->descriptor.parent_type == WCLASS_FUSED_WINDOW_ICON) &&
 		   (((WIcon *) parent)->owner->frame->workspace == workspace
 		    || IS_OMNIPRESENT(((WIcon *) parent)->owner)
 		    || wPreferences.sticky_icons)

@@ -159,6 +159,13 @@ WIcon *icon_create_for_wwindow(WWindow *wwin)
 	return icon;
 }
 
+void wIconSetupFused(WIcon *icon)
+{
+	icon->core->descriptor.parent_type = WCLASS_FUSED_WINDOW_ICON;
+	icon->core->descriptor.handle_expose = miniwindowExpose;
+	icon->core->descriptor.handle_mousedown = miniwindowMouseDown;
+}
+
 WIcon *icon_create_for_dock(WScreen *scr, const char *command, const char *wm_instance, const char *wm_class, int tile)
 {
 	WIcon *icon;

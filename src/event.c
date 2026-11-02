@@ -902,7 +902,9 @@ static void handleButtonPress(XEvent * event)
 		}
 		XSync(dpy, 0);
 	} else if (desc->parent_type == WCLASS_APPICON
-		   || desc->parent_type == WCLASS_MINIWINDOW || desc->parent_type == WCLASS_DOCK_ICON) {
+		   || desc->parent_type == WCLASS_MINIWINDOW
+		   || desc->parent_type == WCLASS_FUSED_WINDOW_ICON
+		   || desc->parent_type == WCLASS_DOCK_ICON) {
 		if (event->xbutton.state & MOD_MASK) {
 			XSync(dpy, 0);
 			XAllowEvents(dpy, AsyncPointer, CurrentTime);
@@ -1150,7 +1152,8 @@ static void handleClientMessage(XEvent * event)
 		if (XFindContext(dpy, event->xbutton.window, w_global.context.client_win, (XPointer *) & desc) != XCNOENT) {
 			struct WIcon *icon = NULL;
 
-			if (desc->parent_type == WCLASS_MINIWINDOW) {
+			if (desc->parent_type == WCLASS_MINIWINDOW
+			    || desc->parent_type == WCLASS_FUSED_WINDOW_ICON) {
 				icon = (WIcon *) desc->parent;
 			} else if (desc->parent_type == WCLASS_DOCK_ICON || desc->parent_type == WCLASS_APPICON) {
 				icon = ((WAppIcon *) desc->parent)->icon;

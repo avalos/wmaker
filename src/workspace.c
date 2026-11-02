@@ -525,9 +525,10 @@ void wWorkspaceForceChange(WScreen * scr, int workspace)
 					}
 					toUnmap[toUnmapCount++] = tmp;
 				}
-				/* also unmap miniwindows not on this workspace */
-				if (!wPreferences.sticky_icons && tmp->flags.miniaturized &&
-				    tmp->icon && !IS_OMNIPRESENT(tmp)) {
+				/* also unmap miniwindows and fused icons not on this workspace */
+				if (!wPreferences.sticky_icons && tmp->icon
+				    && (tmp->flags.miniaturized || wPreferences.fuse_window_icons)
+				    && !IS_OMNIPRESENT(tmp)) {
 					XUnmapWindow(dpy, tmp->icon->core->window);
 					tmp->icon->mapped = 0;
 				}
@@ -561,11 +562,16 @@ void wWorkspaceForceChange(WScreen * scr, int workspace)
 							}
 						}
 						/* Also map miniwindow if not omnipresent */
-						if (!wPreferences.sticky_icons &&
-						    tmp->flags.miniaturized && !IS_OMNIPRESENT(tmp) && tmp->icon) {
+						if (!wPreferences.sticky_icons && tmp->icon
+						    && (tmp->flags.miniaturized || wPreferences.fuse_window_icons)
+						    && !IS_OMNIPRESENT(tmp)) {
 							tmp->icon->mapped = 1;
 							XMapWindow(dpy, tmp->icon->core->window);
 						}
+					} else if (wPreferences.fuse_window_icons && tmp->icon
+						   && !wPreferences.sticky_icons && !IS_OMNIPRESENT(tmp)) {
+						tmp->icon->mapped = 1;
+						XMapWindow(dpy, tmp->icon->core->window);
 					}
 				}
 			}

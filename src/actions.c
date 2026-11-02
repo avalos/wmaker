@@ -1488,6 +1488,7 @@ void wIconifyWindow(WWindow *wwin)
 {
 	XWindowAttributes attribs;
 	int present;
+	Bool icon_created = False;
 
 	if (!XGetWindowAttributes(dpy, wwin->client_win, &attribs))
 		return; /* the window doesn't exist anymore */
@@ -1513,51 +1514,58 @@ void wIconifyWindow(WWindow *wwin)
 	}
 
 	if (!wPreferences.disable_miniwindows && !wwin->flags.net_handle_icon) {
-		if (!wwin->flags.icon_moved)
-			PlaceIcon(wwin->screen_ptr, &wwin->icon_x, &wwin->icon_y, wGetHeadForWindow(wwin));
+		if (wPreferences.fuse_window_icons && wwin->icon != NULL) {
+			wwin->icon->mapped = 1;
+		} else {
+			if (!wwin->flags.icon_moved)
+				PlaceIcon(wwin->screen_ptr, &wwin->icon_x, &wwin->icon_y, wGetHeadForWindow(wwin));
 
-		wwin->icon = icon_create_for_wwindow(wwin);
-		wwin->icon->mapped = 1;
+			wwin->icon = icon_create_for_wwindow(wwin);
+			if (wPreferences.fuse_window_icons)
+				wIconSetupFused(wwin->icon);
+			wwin->icon->mapped = 1;
+			icon_created = True;
 
-		/* extract the window screenshot every time, as the option can be enable anytime */
-		if (wwin->client_win && wwin->flags.mapped) {
-			RImage *mini_preview;
-			XImage *pimg;
-			unsigned int w, h;
-			int x, y;
-			Window baz;
+			/* extract the window screenshot every time, as the option can be enable anytime */
+			if (wwin->client_win && wwin->flags.mapped) {
+				RImage *mini_preview;
+				XImage *pimg;
+				unsigned int w, h;
+				int x, y;
+				Window baz;
 
-			XRaiseWindow(dpy, wwin->frame->core->window);
-			XTranslateCoordinates(dpy, wwin->client_win, wwin->screen_ptr->root_win, 0, 0, &x, &y, &baz);
+				XRaiseWindow(dpy, wwin->frame->core->window);
+				XTranslateCoordinates(dpy, wwin->client_win, wwin->screen_ptr->root_win, 0, 0, &x, &y, &baz);
 
-			w = attribs.width;
-			h = attribs.height;
+				w = attribs.width;
+				h = attribs.height;
 
-			if (x - attribs.x + attribs.width > wwin->screen_ptr->scr_width)
-				w = wwin->screen_ptr->scr_width - x + attribs.x;
+				if (x - attribs.x + attribs.width > wwin->screen_ptr->scr_width)
+					w = wwin->screen_ptr->scr_width - x + attribs.x;
 
-			if (y - attribs.y + attribs.height > wwin->screen_ptr->scr_height)
-				h = wwin->screen_ptr->scr_height - y + attribs.y;
+				if (y - attribs.y + attribs.height > wwin->screen_ptr->scr_height)
+					h = wwin->screen_ptr->scr_height - y + attribs.y;
 
-			pimg = XGetImage(dpy, wwin->client_win, 0, 0, w, h, AllPlanes, ZPixmap);
-			if (pimg) {
-				mini_preview = RCreateImageFromXImage(wwin->screen_ptr->rcontext, pimg, NULL);
-				XDestroyImage(pimg);
+				pimg = XGetImage(dpy, wwin->client_win, 0, 0, w, h, AllPlanes, ZPixmap);
+				if (pimg) {
+					mini_preview = RCreateImageFromXImage(wwin->screen_ptr->rcontext, pimg, NULL);
+					XDestroyImage(pimg);
 
-				if (mini_preview) {
-					set_icon_minipreview(wwin->icon, mini_preview);
-					RReleaseImage(mini_preview);
-				} else {
-					const char *title;
-					char title_buf[32];
-
-					if (wwin->frame->title) {
-						title = wwin->frame->title;
+					if (mini_preview) {
+						set_icon_minipreview(wwin->icon, mini_preview);
+						RReleaseImage(mini_preview);
 					} else {
-						snprintf(title_buf, sizeof(title_buf), "(id=0x%lx)", wwin->client_win);
-						title = title_buf;
+						const char *title;
+						char title_buf[32];
+
+						if (wwin->frame->title) {
+							title = wwin->frame->title;
+						} else {
+							snprintf(title_buf, sizeof(title_buf), "(id=0x%lx)", wwin->client_win);
+							title = title_buf;
+						}
+						wwarning(_("creation of mini-preview failed for window \"%s\""), title);
 					}
-					wwarning(_("creation of mini-preview failed for window \"%s\""), title);
 				}
 			}
 		}
@@ -1599,8 +1607,10 @@ void wIconifyWindow(WWindow *wwin)
 		    IS_OMNIPRESENT(wwin) || wPreferences.sticky_icons)
 			XMapWindow(dpy, wwin->icon->core->window);
 
-		AddToStackList(wwin->icon->core);
-		wLowerFrame(wwin->icon->core);
+		if (!wPreferences.fuse_window_icons || icon_created) {
+			AddToStackList(wwin->icon->core);
+			wLowerFrame(wwin->icon->core);
+		}
 	}
 
 	if (present) {
@@ -1693,7 +1703,7 @@ void wDeiconifyWindow(WWindow *wwin)
 		 * it seems to me we might break behaviour this way.
 		 */
 		if (!wPreferences.disable_miniwindows && !wwin->flags.net_handle_icon
-		    && wwin->icon != NULL) {
+		    && !wPreferences.fuse_window_icons && wwin->icon != NULL) {
 			if (wwin->icon->selected)
 				wIconSelect(wwin->icon);
 
@@ -1727,7 +1737,7 @@ void wDeiconifyWindow(WWindow *wwin)
 	}
 
 	if (!wPreferences.disable_miniwindows && wwin->icon != NULL
-	    && !wwin->flags.net_handle_icon) {
+	    && !wwin->flags.net_handle_icon && !wPreferences.fuse_window_icons) {
 		RemoveFromStackList(wwin->icon->core);
 		wSetFocusTo(wwin->screen_ptr, wwin);
 		wIconDestroy(wwin->icon);
