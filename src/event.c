@@ -904,6 +904,7 @@ static void handleButtonPress(XEvent * event)
 	} else if (desc->parent_type == WCLASS_APPICON
 		   || desc->parent_type == WCLASS_MINIWINDOW
 		   || desc->parent_type == WCLASS_FUSED_WINDOW_ICON
+		   || desc->parent_type == WCLASS_FUSED_GROUP
 		   || desc->parent_type == WCLASS_DOCK_ICON) {
 		if (event->xbutton.state & MOD_MASK) {
 			XSync(dpy, 0);

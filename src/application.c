@@ -186,6 +186,9 @@ void wApplicationDestroy(WApplication *wapp)
 	/* Remove application icon */
 	removeAppIconFor(wapp);
 
+	/* Remove the group icon that stood in for its windows */
+	fusedGroupDestroyForApplication(wapp);
+
 	wwin = wWindowFor(wapp->main_window_desc->client_win);
 
 	wWindowDestroy(wapp->main_window_desc);

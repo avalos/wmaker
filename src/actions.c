@@ -1599,11 +1599,14 @@ static void flushWindowPreview(WWindow *wwin)
 void wIconifyWindow(WWindow *wwin)
 {
 	XWindowAttributes attribs;
+	WApplication *wapp;
 	int present;
 	Bool icon_created = False;
 
 	if (!XGetWindowAttributes(dpy, wwin->client_win, &attribs))
 		return; /* the window doesn't exist anymore */
+
+	wapp = wApplicationOf(wwin->main_window);
 
 	if (wwin->flags.miniaturized)
 		return; /* already miniaturized */
@@ -1627,7 +1630,8 @@ void wIconifyWindow(WWindow *wwin)
 
 	if (!wPreferences.disable_miniwindows && !wwin->flags.net_handle_icon) {
 		if (wPreferences.fuse_window_icons && wwin->icon != NULL) {
-			wwin->icon->mapped = 1;
+			if (!fusedGroupIsActive(wapp))
+				wwin->icon->mapped = 1;
 		} else {
 			if (!wwin->flags.icon_moved)
 				PlaceIcon(wwin->screen_ptr, &wwin->icon_x, &wwin->icon_y, wGetHeadForWindow(wwin));
@@ -1676,8 +1680,9 @@ void wIconifyWindow(WWindow *wwin)
 	wwin->flags.skip_next_animation = 0;
 
 	if (!wPreferences.disable_miniwindows && !wwin->flags.net_handle_icon) {
-		if (wwin->screen_ptr->current_workspace == wwin->frame->workspace ||
-		    IS_OMNIPRESENT(wwin) || wPreferences.sticky_icons)
+		if ((wwin->screen_ptr->current_workspace == wwin->frame->workspace ||
+		     IS_OMNIPRESENT(wwin) || wPreferences.sticky_icons)
+		    && !fusedGroupIsActive(wapp))
 			XMapWindow(dpy, wwin->icon->core->window);
 
 		if (!wPreferences.fuse_window_icons || icon_created) {
@@ -2120,7 +2125,8 @@ void wUnhideApplication(WApplication *wapp, Bool miniwindows, Bool bringToCurren
 
 			if (wlist->flags.miniaturized) {
 				if ((bringToCurrentWS || wPreferences.sticky_icons ||
-				     wlist->frame->workspace == scr->current_workspace) && wlist->icon) {
+				     wlist->frame->workspace == scr->current_workspace) && wlist->icon
+				    && !fusedGroupIsActive(wapp)) {
 					if (!wlist->icon->mapped) {
 						int x, y;
 

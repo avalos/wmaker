@@ -564,12 +564,14 @@ void wWorkspaceForceChange(WScreen * scr, int workspace)
 						/* Also map miniwindow if not omnipresent */
 						if (!wPreferences.sticky_icons && tmp->icon
 						    && (tmp->flags.miniaturized || wPreferences.fuse_window_icons)
-						    && !IS_OMNIPRESENT(tmp)) {
+						    && !IS_OMNIPRESENT(tmp)
+						    && !fusedGroupIsActive(wApplicationOf(tmp->main_window))) {
 							tmp->icon->mapped = 1;
 							XMapWindow(dpy, tmp->icon->core->window);
 						}
 					} else if (wPreferences.fuse_window_icons && tmp->icon
-						   && !wPreferences.sticky_icons && !IS_OMNIPRESENT(tmp)) {
+						   && !wPreferences.sticky_icons && !IS_OMNIPRESENT(tmp)
+						   && !fusedGroupIsActive(wApplicationOf(tmp->main_window))) {
 						tmp->icon->mapped = 1;
 						XMapWindow(dpy, tmp->icon->core->window);
 					}
@@ -581,6 +583,8 @@ void wWorkspaceForceChange(WScreen * scr, int workspace)
 			}
 			tmp = tmp->prev;
 		}
+
+		fusedGroupsSwitchWorkspace(scr, workspace);
 
 		while (toUnmapCount > 0)
 		{

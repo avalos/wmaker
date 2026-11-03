@@ -243,6 +243,16 @@ void wWindowDestroy(WWindow *wwin)
 		if (wPreferences.auto_arrange_icons)
 			wArrangeIcons(wwin->screen_ptr, True);
 	}
+
+	{
+		WApplication *wapp = wApplicationOf(wwin->main_window);
+
+		/* Its group may be another application's, if the window changed leader. */
+		fusedGroupsForgetWindow(wwin);
+		if (wapp)
+			fusedGroupUpdateForApplication(wapp);
+	}
+
 	if (wwin->net_icon_image)
 		RReleaseImage(wwin->net_icon_image);
 
@@ -1407,6 +1417,10 @@ WWindow *wManageWindow(WScreen *scr, Window window)
 		wwin->prev = NULL;
 	}
 
+	/* The group count reads the focus list, which holds this window only from here. */
+	if (wApplicationOf(wwin->main_window))
+		fusedGroupUpdateForApplication(wApplicationOf(wwin->main_window));
+
 	/* raise is set to true if we un-hid the app when this window was born.
 	 * we raise, else old windows of this app will be above this new one. */
 	if (raise)
@@ -1772,14 +1786,24 @@ void wUnmanageWindow(WWindow *wwin, Bool restore, Bool destroyed)
 
 static void wWindowUpdateFusedIcon(WWindow *wwin)
 {
+	WApplication *wapp;
+
 	if (!wPreferences.fuse_window_icons)
 		return;
 
-	if (wwin->flags.net_handle_icon || WFLAGP(wwin, no_appicon))
-		return;
+	wapp = wApplicationOf(wwin->main_window);
 
-	if (wwin->transient_for != None && wwin->transient_for != wwin->screen_ptr->root_win)
+	if (wwin->flags.net_handle_icon || WFLAGP(wwin, no_appicon)) {
+		if (wapp)
+			fusedGroupUpdateForApplication(wapp);
 		return;
+	}
+
+	if (wwin->transient_for != None && wwin->transient_for != wwin->screen_ptr->root_win) {
+		if (wapp)
+			fusedGroupUpdateForApplication(wapp);
+		return;
+	}
 
 	if (wwin->icon == NULL) {
 		if (!wwin->flags.icon_moved)
@@ -1792,11 +1816,15 @@ static void wWindowUpdateFusedIcon(WWindow *wwin)
 		wLowerFrame(wwin->icon->core);
 	}
 
-	if (wwin->frame->workspace == wwin->screen_ptr->current_workspace
-	    || IS_OMNIPRESENT(wwin) || wPreferences.sticky_icons) {
+	if (!fusedGroupIsActive(wapp)
+	    && (wwin->frame->workspace == wwin->screen_ptr->current_workspace
+		|| IS_OMNIPRESENT(wwin) || wPreferences.sticky_icons)) {
 		wwin->icon->mapped = 1;
 		XMapWindow(dpy, wwin->icon->core->window);
 	}
+
+	if (wapp)
+		fusedGroupUpdateForApplication(wapp);
 }
 
 void wWindowMap(WWindow *wwin)
@@ -2163,7 +2191,8 @@ void wWindowChangeWorkspace(WWindow *wwin, int workspace)
 	} else {
 		/* brought to current workspace. Map window */
 		if (wwin->icon && (wwin->flags.miniaturized || wPreferences.fuse_window_icons)
-		    && !wPreferences.sticky_icons) {
+		    && !wPreferences.sticky_icons
+		    && !fusedGroupIsActive(wApplicationOf(wwin->main_window))) {
 			XMapWindow(dpy, wwin->icon->core->window);
 			wwin->icon->mapped = 1;
 		}

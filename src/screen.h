@@ -52,6 +52,20 @@ typedef struct WAppIconChain {
 } WAppIconChain;
 
 
+/* One icon standing in for all the windows of an application that has more
+ * of them than FuseWindowIconGroupThreshold. */
+typedef struct WFusedGroup {
+    struct WApplication *wapp;	       /* application the group belongs to */
+    struct WIcon *icon;		       /* the group icon */
+    char *title;		       /* icon title, owned by the group */
+    struct WWindow **windows;	       /* the windows it represents */
+    int count;			       /* number of windows in the group */
+    int x, y;			       /* group icon position */
+    int workspace;		       /* workspace the icon is shown on */
+    struct WFusedGroup *next;
+} WFusedGroup;
+
+
 /* Drawers, which are docks, really */
 typedef struct WDrawerChain {
     struct WDock *adrawer;
@@ -112,6 +126,8 @@ typedef struct _WScreen {
     WMArray *fakeGroupLeaders;         /* list of fake window group ids */
 
     struct WAppIcon *app_icon_list;    /* list of all app-icons on screen */
+
+    struct WFusedGroup *fused_groups;  /* group icons for applications over the threshold */
 
     struct WApplication *wapp_list;    /* list of all aplications */
 

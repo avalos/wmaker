@@ -618,7 +618,7 @@ WMenu *createApplicationMenu(WScreen *scr)
 	return menu;
 }
 
-static void openApplicationMenu(WApplication * wapp, int x, int y)
+void openApplicationMenu(WApplication * wapp, int x, int y)
 {
 	WMenu *menu;
 	WScreen *scr = wapp->main_window_desc->screen_ptr;

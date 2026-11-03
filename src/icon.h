@@ -63,6 +63,12 @@ WIcon *icon_create_for_wwindow(WWindow *wwin);
 void wIconSetupFused(WIcon *icon);
 void fusedIconMouseDown(WObjDescriptor *desc, XEvent *event);
 
+void fusedGroupUpdateForApplication(WApplication *wapp);
+void fusedGroupDestroyForApplication(WApplication *wapp);
+Bool fusedGroupIsActive(WApplication *wapp);
+void fusedGroupsForgetWindow(WWindow *wwin);
+void fusedGroupsSwitchWorkspace(WScreen *scr, int workspace);
+
 void set_icon_image_from_database(WIcon *icon, const char *wm_instance, const char *wm_class, const char *command);
 void wIconDestroy(WIcon *icon);
 void wIconPaint(WIcon *icon);
