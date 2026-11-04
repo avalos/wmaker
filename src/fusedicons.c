@@ -47,3 +47,20 @@ int fusedIconBringsWindowHere(int fuse_window_icons,
 		return 1;
 	return bring_to_current_workspace != 0;
 }
+
+int fusedGroupShowsOnWorkspace(const int *window_workspaces,
+			       const int *window_omnipresent,
+			       int count, int sticky_icons, int workspace)
+{
+	int i;
+
+	if (sticky_icons)
+		return 1;
+
+	for (i = 0; i < count; i++) {
+		if (window_omnipresent[i] || window_workspaces[i] == workspace)
+			return 1;
+	}
+
+	return 0;
+}

@@ -61,7 +61,6 @@ typedef struct WFusedGroup {
     struct WWindow **windows;	       /* the windows it represents */
     int count;			       /* number of windows in the group */
     int x, y;			       /* group icon position */
-    int workspace;		       /* workspace the icon is shown on */
     struct WFusedGroup *next;
 } WFusedGroup;
 

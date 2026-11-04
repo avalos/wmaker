@@ -2208,6 +2208,13 @@ void wWindowChangeWorkspace(WWindow *wwin, int workspace)
 
 	if (unmap)
 		wWindowUnmap(wwin);
+
+	if (wPreferences.fuse_window_icons) {
+		WApplication *group_app = wApplicationOf(wwin->main_window);
+
+		if (group_app)
+			fusedGroupUpdateForApplication(group_app);
+	}
 }
 
 void wWindowChangeWorkspaceRelative(WWindow *wwin, int amount)

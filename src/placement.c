@@ -75,7 +75,7 @@ iconPosition(WCoreWindow *wcore, int sx1, int sy1, int sx2, int sy2,
 	} else if (wcore->descriptor.parent_type == WCLASS_FUSED_GROUP) {
 		WFusedGroup *group = parent;
 
-		if (group->icon->mapped && group->workspace == workspace) {
+		if (group->icon->mapped && fusedGroupVisibleOnWorkspace(group, workspace)) {
 			*retX = group->x;
 			*retY = group->y;
 			ok = 1;

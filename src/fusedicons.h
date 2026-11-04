@@ -28,4 +28,8 @@ int fusedIconHiddenOnWorkspace(int omnipresent, int sticky_icons,
 int fusedIconBringsWindowHere(int fuse_window_icons,
 			      int bring_to_current_workspace);
 
+int fusedGroupShowsOnWorkspace(const int *window_workspaces,
+			       const int *window_omnipresent,
+			       int count, int sticky_icons, int workspace);
+
 #endif

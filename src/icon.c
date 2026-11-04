@@ -49,6 +49,7 @@
 #include "winmenu.h"
 #include "placement.h"
 #include "xinerama.h"
+#include "fusedicons.h"
 
 /**** Global varianebles ****/
 
@@ -1193,6 +1194,38 @@ Bool fusedGroupIsActive(WApplication *wapp)
 	return fusedGroupForApplication(scr, wapp) != NULL ? True : False;
 }
 
+Bool fusedGroupVisibleOnWorkspace(WFusedGroup *group, int workspace)
+{
+	WWindow *wwin;
+	int *workspaces;
+	int *omnipresent;
+	Bool result;
+	int count;
+	int i;
+
+	count = group ? group->count : 0;
+
+	if (count <= 0)
+		return wPreferences.sticky_icons ? True : False;
+
+	workspaces = wmalloc(count * sizeof(int));
+	omnipresent = wmalloc(count * sizeof(int));
+
+	for (i = 0; i < count; i++) {
+		wwin = group->windows[i];
+		workspaces[i] = wwin ? wwin->frame->workspace : -1;
+		omnipresent[i] = wwin ? IS_OMNIPRESENT(wwin) : 0;
+	}
+
+	result = fusedGroupShowsOnWorkspace(workspaces, omnipresent, count,
+					    wPreferences.sticky_icons, workspace) ? True : False;
+
+	wfree(workspaces);
+	wfree(omnipresent);
+
+	return result;
+}
+
 static int fusedGroupCountWindows(WScreen *scr, WApplication *wapp)
 {
 	WWindow *wwin;
@@ -1305,7 +1338,6 @@ static WFusedGroup *fusedGroupCreate(WScreen *scr, WApplication *wapp, int count
 	group->icon->core->descriptor.handle_expose = fusedGroupExpose;
 	group->icon->core->descriptor.handle_mousedown = fusedGroupMouseDown;
 
-	group->workspace = scr->current_workspace;
 	PlaceIcon(scr, &group->x, &group->y, wGetHeadForWindow(wapp->main_window_desc));
 	XMoveWindow(dpy, group->icon->core->window, group->x, group->y);
 
@@ -1319,8 +1351,11 @@ static WFusedGroup *fusedGroupCreate(WScreen *scr, WApplication *wapp, int count
 	fusedGroupSetTitle(group);
 	fusedGroupHideWindowIcons(group);
 
-	group->icon->mapped = 1;
-	XMapWindow(dpy, group->icon->core->window);
+	group->icon->mapped = 0;
+	if (fusedGroupVisibleOnWorkspace(group, scr->current_workspace)) {
+		group->icon->mapped = 1;
+		XMapWindow(dpy, group->icon->core->window);
+	}
 
 	return group;
 }
@@ -1405,10 +1440,14 @@ void fusedGroupUpdateForApplication(WApplication *wapp)
 			group = fusedGroupCreate(scr, wapp, count);
 		fusedGroupSetTitle(group);
 		fusedGroupHideWindowIcons(group);
-		if (!group->icon->mapped
-		    && (group->workspace == scr->current_workspace || wPreferences.sticky_icons)) {
-			group->icon->mapped = 1;
-			XMapWindow(dpy, group->icon->core->window);
+		if (fusedGroupVisibleOnWorkspace(group, scr->current_workspace)) {
+			if (!group->icon->mapped) {
+				group->icon->mapped = 1;
+				XMapWindow(dpy, group->icon->core->window);
+			}
+		} else if (group->icon->mapped) {
+			group->icon->mapped = 0;
+			XUnmapWindow(dpy, group->icon->core->window);
 		}
 	} else if (group) {
 		fusedGroupDestroy(group);
@@ -1451,14 +1490,14 @@ void fusedGroupsSwitchWorkspace(WScreen *scr, int workspace)
 		return;
 
 	for (group = scr->fused_groups; group != NULL; group = group->next) {
-		if (!wPreferences.sticky_icons && group->workspace != workspace) {
-			if (group->icon->mapped) {
-				group->icon->mapped = 0;
-				XUnmapWindow(dpy, group->icon->core->window);
+		if (fusedGroupVisibleOnWorkspace(group, workspace)) {
+			if (!group->icon->mapped) {
+				group->icon->mapped = 1;
+				XMapWindow(dpy, group->icon->core->window);
 			}
-		} else if (!group->icon->mapped) {
-			group->icon->mapped = 1;
-			XMapWindow(dpy, group->icon->core->window);
+		} else if (group->icon->mapped) {
+			group->icon->mapped = 0;
+			XUnmapWindow(dpy, group->icon->core->window);
 		}
 	}
 }

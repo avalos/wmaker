@@ -66,6 +66,7 @@ void fusedIconMouseDown(WObjDescriptor *desc, XEvent *event);
 void fusedGroupUpdateForApplication(WApplication *wapp);
 void fusedGroupDestroyForApplication(WApplication *wapp);
 Bool fusedGroupIsActive(WApplication *wapp);
+Bool fusedGroupVisibleOnWorkspace(WFusedGroup *group, int workspace);
 void fusedGroupsForgetWindow(WWindow *wwin);
 void fusedGroupsSwitchWorkspace(WScreen *scr, int workspace);
 
