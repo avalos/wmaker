@@ -6,6 +6,13 @@ EXTRA_DIST = notest.c
 
 noinst_PROGRAMS = wtest wm_fsm_test
 
+check_PROGRAMS = icon_order_test
+TESTS = icon_order_test
+
+icon_order_test_SOURCES = icon_order_test.c $(top_srcdir)/src/iconorder.c
+
+icon_order_test_CPPFLAGS = -I$(top_srcdir)/src
+
 wtest_SOURCES = wtest.c
 
 wtest_LDADD = $(top_builddir)/wmlib/libWMaker.la @XLFLAGS@ @XLIBS@
