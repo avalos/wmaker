@@ -1071,8 +1071,13 @@ void fusedIconMouseDown(WObjDescriptor *desc, XEvent *event)
 		{
 			WObjDescriptor *mdesc;
 
-			if (!wapp)
+			if (!wapp) {
+				OpenMiniwindowMenu(wwin, event->xbutton.x_root, event->xbutton.y_root);
+				mdesc = &scr->window_menu->menu->descriptor;
+				event->xbutton.send_event = True;
+				(*mdesc->handle_mousedown) (mdesc, event);
 				return;
+			}
 
 			OpenWindowIconMenu(wwin, event->xbutton.x_root, event->xbutton.y_root);
 			if (!scr->fused_icon_menu)
@@ -1162,9 +1167,12 @@ static int fusedGroupCountsWindow(WWindow *wwin, WApplication *wapp)
 		return 0;
 	if (wwin->main_window != wapp->main_window)
 		return 0;
-	if (wwin->flags.net_handle_icon || WFLAGP(wwin, no_appicon))
-		return 0;
-	if (wwin->transient_for != None && wwin->transient_for != wwin->screen_ptr->root_win)
+	if (!fusedIconAppliesToWindow(wPreferences.fuse_window_icons,
+				      wwin->transient_for != None
+				      && wwin->transient_for != wwin->screen_ptr->root_win,
+				      wwin->flags.net_handle_icon,
+				      WFLAGP(wwin, no_appicon),
+				      WFLAGP(wwin, no_miniaturizable)))
 		return 0;
 	return 1;
 }

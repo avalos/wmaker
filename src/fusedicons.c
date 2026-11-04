@@ -19,7 +19,8 @@
 #include "fusedicons.h"
 
 int fusedIconAppliesToWindow(int fuse_window_icons, int is_transient,
-			     int net_handle_icon, int no_appicon)
+			     int net_handle_icon, int no_appicon,
+			     int no_miniaturizable)
 {
 	if (!fuse_window_icons)
 		return 0;
@@ -28,6 +29,8 @@ int fusedIconAppliesToWindow(int fuse_window_icons, int is_transient,
 	if (net_handle_icon)
 		return 0;
 	if (no_appicon)
+		return 0;
+	if (no_miniaturizable)
 		return 0;
 	return 1;
 }

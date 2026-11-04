@@ -44,6 +44,15 @@ other workspace. An omnipresent window counts for every workspace, and `sticky_i
 
 To turn grouping off, set `FuseWindowIconGrouping = NO`; per-window icons are then always shown, whatever the count.
 
+## Windows that get no icon, and windows without an application
+
+A window that cannot be minimized (`NoMiniaturizable`: a dock, toolbar or menu window, or a window the user marked so) gets no
+fused icon, because the icon stands for a window that can be minimized and restored.
+
+A window that sets no window group hint and no client leader has no application, so it cannot offer the application
+actions. Such a window still gets a fused icon, but its right-click menu falls back to the window's own menu (raise, move,
+minimize, close) instead of the combined application and window menu.
+
 ## Session restore
 
 With `SaveSessionOnExit = YES`, a session save also writes the icon state to `~/GNUstep/Defaults/WMState`:

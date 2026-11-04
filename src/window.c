@@ -1805,13 +1805,12 @@ static void wWindowUpdateFusedIcon(WWindow *wwin)
 
 	wapp = wApplicationOf(wwin->main_window);
 
-	if (wwin->flags.net_handle_icon || WFLAGP(wwin, no_appicon)) {
-		if (wapp)
-			fusedGroupUpdateForApplication(wapp);
-		return;
-	}
-
-	if (wwin->transient_for != None && wwin->transient_for != wwin->screen_ptr->root_win) {
+	if (!fusedIconAppliesToWindow(wPreferences.fuse_window_icons,
+				      wwin->transient_for != None
+				      && wwin->transient_for != wwin->screen_ptr->root_win,
+				      wwin->flags.net_handle_icon,
+				      WFLAGP(wwin, no_appicon),
+				      WFLAGP(wwin, no_miniaturizable))) {
 		if (wapp)
 			fusedGroupUpdateForApplication(wapp);
 		return;

@@ -20,7 +20,8 @@
 #define WMAKER_FUSEDICONS_H
 
 int fusedIconAppliesToWindow(int fuse_window_icons, int is_transient,
-			     int net_handle_icon, int no_appicon);
+			     int net_handle_icon, int no_appicon,
+			     int no_miniaturizable);
 
 int fusedIconHiddenOnWorkspace(int omnipresent, int sticky_icons,
 			       int window_workspace, int current_workspace);
