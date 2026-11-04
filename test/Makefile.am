@@ -6,6 +6,13 @@ EXTRA_DIST = notest.c
 
 noinst_PROGRAMS = wtest wm_fsm_test
 
+check_PROGRAMS = fused_icons_test
+TESTS = fused_icons_test
+
+fused_icons_test_SOURCES = fused_icons_test.c $(top_srcdir)/src/fusedicons.c
+
+fused_icons_test_CPPFLAGS = -I$(top_srcdir)/src
+
 wtest_SOURCES = wtest.c
 
 wtest_LDADD = $(top_builddir)/wmlib/libWMaker.la @XLFLAGS@ @XLIBS@
