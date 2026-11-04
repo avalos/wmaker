@@ -48,6 +48,9 @@ WApplication *wApplicationCreate(struct WWindow *wwin);
 WApplication *wApplicationOf(Window window);
 void wApplicationDestroy(WApplication *wapp);
 
+/* "wm_instance.wm_class" identifier for the application, malloc'ed. */
+char *wApplicationIdentifier(WApplication *wapp);
+
 void wAppBounce(WApplication *);
 void wAppBounceWhileUrgent(WApplication *);
 void wApplicationActivate(WApplication *);

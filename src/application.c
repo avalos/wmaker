@@ -20,6 +20,7 @@
 #include "wconfig.h"
 
 #include <X11/Xlib.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "WindowMaker.h"
@@ -214,4 +215,25 @@ void wApplicationDeactivate(WApplication *wapp)
 		wIconSetHighlited(wapp->app_icon->icon, False);
 		wAppIconPaint(wapp->app_icon);
 	}
+}
+
+char *wApplicationIdentifier(WApplication *wapp)
+{
+	WWindow *main = wapp ? wapp->main_window_desc : NULL;
+	const char *instance = main ? main->wm_instance : NULL;
+	const char *class = main ? main->wm_class : NULL;
+	char buffer[512];
+
+	if (instance && instance[0] != '\0') {
+		if (class && class[0] != '\0')
+			snprintf(buffer, sizeof(buffer), "%s.%s", instance, class);
+		else
+			snprintf(buffer, sizeof(buffer), "%s", instance);
+	} else if (class && class[0] != '\0') {
+		snprintf(buffer, sizeof(buffer), ".%s", class);
+	} else {
+		snprintf(buffer, sizeof(buffer), ".");
+	}
+
+	return wstrdup(buffer);
 }

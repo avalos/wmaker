@@ -43,3 +43,17 @@ The group icon shows on each workspace where the application has at least one wi
 other workspace. An omnipresent window counts for every workspace, and `sticky_icons` shows the group icon everywhere.
 
 To turn grouping off, set `FuseWindowIconGrouping = NO`; per-window icons are then always shown, whatever the count.
+
+## Session restore
+
+With `SaveSessionOnExit = YES`, a session save also writes the icon state to `~/GNUstep/Defaults/WMState`:
+
+- `IconPosition` (`"x,y"`) in a window's entry under `Applications`, only when the user moved that window's icon, so
+  other icons are packed into the icon yard again.
+- `FusedGroups`, a list with one entry per grouped application: `Name` (`wm_instance.wm_class`), `Count` (its windows when
+  saved) and `IconPosition` (the group icon's position).
+
+On the next start, an application whose windows pass the threshold again comes back grouped at its saved position.
+Minimized windows come back minimized on their own workspaces. Sessions written by older packages load unchanged: a
+missing key means "not moved, not grouped". A saved position outside the current screen is ignored and the icon is placed
+as usual.

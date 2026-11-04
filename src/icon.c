@@ -1326,9 +1326,27 @@ static WIcon *fusedGroupCreateIcon(WScreen *scr, WApplication *wapp)
 	return icon;
 }
 
+static WSavedFusedGroup *savedFusedGroupForApplication(WScreen *scr, WApplication *wapp)
+{
+	char *identifier = wApplicationIdentifier(wapp);
+	WSavedFusedGroup *saved = NULL;
+
+	if (!identifier)
+		return NULL;
+
+	for (saved = scr->saved_fused_groups; saved != NULL; saved = saved->next) {
+		if (saved->name && strcmp(saved->name, identifier) == 0)
+			break;
+	}
+
+	wfree(identifier);
+	return saved;
+}
+
 static WFusedGroup *fusedGroupCreate(WScreen *scr, WApplication *wapp, int count)
 {
 	WFusedGroup *group = wmalloc(sizeof(WFusedGroup));
+	WSavedFusedGroup *saved;
 
 	memset(group, 0, sizeof(*group));
 	group->wapp = wapp;
@@ -1338,7 +1356,16 @@ static WFusedGroup *fusedGroupCreate(WScreen *scr, WApplication *wapp, int count
 	group->icon->core->descriptor.handle_expose = fusedGroupExpose;
 	group->icon->core->descriptor.handle_mousedown = fusedGroupMouseDown;
 
-	PlaceIcon(scr, &group->x, &group->y, wGetHeadForWindow(wapp->main_window_desc));
+	/* Keep the saved position only when it is still on the current screen;
+	 * otherwise let PlaceIcon() pack the yard again. */
+	saved = savedFusedGroupForApplication(scr, wapp);
+	if (saved && fusedIconPositionOnScreen(saved->x, saved->y,
+					       scr->scr_width, scr->scr_height)) {
+		group->x = saved->x;
+		group->y = saved->y;
+	} else {
+		PlaceIcon(scr, &group->x, &group->y, wGetHeadForWindow(wapp->main_window_desc));
+	}
 	XMoveWindow(dpy, group->icon->core->window, group->x, group->y);
 
 	AddToStackList(group->icon->core);

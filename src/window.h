@@ -324,6 +324,9 @@ typedef struct WSavedState {
     unsigned int h;
     unsigned window_shortcuts; /* mask like 1<<shortcut_number */
 	char *mark_key;	/* serialised mark key label */
+	int icon_x;		       /* saved icon position (valid when icon_moved) */
+	int icon_y;
+	int icon_moved;		       /* the user moved this window's icon */
 } WSavedState;
 
 typedef struct WWindowState {

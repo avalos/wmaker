@@ -56,6 +56,7 @@
 #include "window.h"
 #include "winspector.h"
 #include "icon.h"
+#include "fusedicons.h"
 #include "properties.h"
 #include "actions.h"
 #include "client.h"
@@ -991,6 +992,17 @@ WWindow *wManageWindow(WScreen *scr, Window window)
 			}
 		} else {
 			workspace = scr->current_workspace;
+		}
+
+		/* Restore the icon position the user saved, but only when it still
+		 * falls on the current screen; otherwise PlaceIcon() repacks it. */
+		if (win_state->state->icon_moved
+		    && fusedIconPositionOnScreen(win_state->state->icon_x,
+						 win_state->state->icon_y,
+						 scr->scr_width, scr->scr_height)) {
+			wwin->icon_x = win_state->state->icon_x;
+			wwin->icon_y = win_state->state->icon_y;
+			wwin->flags.icon_moved = 1;
 		}
 	}
 

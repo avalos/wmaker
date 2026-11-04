@@ -64,3 +64,12 @@ int fusedGroupShowsOnWorkspace(const int *window_workspaces,
 
 	return 0;
 }
+
+int fusedIconPositionOnScreen(int x, int y, int screen_width, int screen_height)
+{
+	if (x < 0 || y < 0)
+		return 0;
+	if (x >= screen_width || y >= screen_height)
+		return 0;
+	return 1;
+}

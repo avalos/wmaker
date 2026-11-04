@@ -32,4 +32,6 @@ int fusedGroupShowsOnWorkspace(const int *window_workspaces,
 			       const int *window_omnipresent,
 			       int count, int sticky_icons, int workspace);
 
+int fusedIconPositionOnScreen(int x, int y, int screen_width, int screen_height);
+
 #endif
