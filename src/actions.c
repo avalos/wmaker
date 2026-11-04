@@ -141,6 +141,10 @@ void wSetFocusTo(WScreen *scr, WWindow *wwin)
 	if (old_focused && old_focused != wwin && old_focused->flags.mapped)
 		captureWindowPreview(old_focused);
 
+	/* And of the one that gains it. */
+	if (wwin && wwin != old_focused && wwin->flags.mapped)
+		captureWindowPreview(wwin);
+
 	w_global.timestamp.focus_change = timestamp;
 
 	if (old_focused)
@@ -1521,7 +1525,6 @@ static void captureWindowPreviewNow(WWindow *wwin)
 
 	scr = wwin->screen_ptr;
 
-	XRaiseWindow(dpy, wwin->frame->core->window);
 	XTranslateCoordinates(dpy, wwin->client_win, scr->root_win, 0, 0, &x, &y, &baz);
 
 	w = attribs.width;
@@ -1643,7 +1646,9 @@ void wIconifyWindow(WWindow *wwin)
 			icon_created = True;
 		}
 
-		/* Snapshot the window before it goes away. */
+		/* Snapshot the window before it goes away. Raise it first so an
+		 * obscured window still yields its full preview. */
+		XRaiseWindow(dpy, wwin->frame->core->window);
 		captureWindowPreview(wwin);
 		flushWindowPreview(wwin);
 	}
