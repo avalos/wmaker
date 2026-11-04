@@ -54,10 +54,21 @@ typedef struct WIcon {
 
 	WMHandlerID	handlerID;	/* timer handler ID for cycling select
 					 * color */
+	WMHandlerID	preview_handler; /* idle timer for the preview capture */
+	unsigned int	preview_failed:1; /* a capture failed once (logged) */
 } WIcon;
 
 WIcon *icon_create_for_dock(WScreen *scr, const char *command, const char *wm_instance, const char *wm_class, int tile);
 WIcon *icon_create_for_wwindow(WWindow *wwin);
+void wIconSetupFused(WIcon *icon);
+void fusedIconMouseDown(WObjDescriptor *desc, XEvent *event);
+
+void fusedGroupUpdateForApplication(WApplication *wapp);
+void fusedGroupDestroyForApplication(WApplication *wapp);
+Bool fusedGroupIsActive(WApplication *wapp);
+Bool fusedGroupVisibleOnWorkspace(WFusedGroup *group, int workspace);
+void fusedGroupsForgetWindow(WWindow *wwin);
+void fusedGroupsSwitchWorkspace(WScreen *scr, int workspace);
 
 void set_icon_image_from_database(WIcon *icon, const char *wm_instance, const char *wm_class, const char *command);
 void wIconDestroy(WIcon *icon);

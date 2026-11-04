@@ -35,6 +35,7 @@
 #include "wcore.h"
 #include "texture.h"
 #include "window.h"
+#include "framewin.h"
 #include "icon.h"
 #include "actions.h"
 #include "stacking.h"
@@ -46,6 +47,9 @@
 #include "startup.h"
 #include "event.h"
 #include "winmenu.h"
+#include "placement.h"
+#include "xinerama.h"
+#include "fusedicons.h"
 
 /**** Global varianebles ****/
 
@@ -56,6 +60,8 @@
 static void miniwindowExpose(WObjDescriptor *desc, XEvent *event);
 static void miniwindowMouseDown(WObjDescriptor *desc, XEvent *event);
 static void miniwindowDblClick(WObjDescriptor *desc, XEvent *event);
+static void fusedGroupMouseDown(WObjDescriptor *desc, XEvent *event);
+static void fusedGroupExpose(WObjDescriptor *desc, XEvent *event);
 
 static WIcon *icon_create_core(WScreen *scr, int coord_x, int coord_y);
 
@@ -159,6 +165,13 @@ WIcon *icon_create_for_wwindow(WWindow *wwin)
 	return icon;
 }
 
+void wIconSetupFused(WIcon *icon)
+{
+	icon->core->descriptor.parent_type = WCLASS_FUSED_WINDOW_ICON;
+	icon->core->descriptor.handle_expose = miniwindowExpose;
+	icon->core->descriptor.handle_mousedown = fusedIconMouseDown;
+}
+
 WIcon *icon_create_for_dock(WScreen *scr, const char *command, const char *wm_instance, const char *wm_class, int tile)
 {
 	WIcon *icon;
@@ -205,6 +218,8 @@ static WIcon *icon_create_core(WScreen *scr, int coord_x, int coord_y)
 	icon->file = NULL;
 	icon->file_image = NULL;
 	icon->icon_win = None;
+	icon->preview_handler = NULL;
+	icon->preview_failed = 0;
 
 	return icon;
 }
@@ -218,6 +233,9 @@ void wIconDestroy(WIcon *icon)
 
 	if (icon->handlerID)
 		WMDeleteTimerHandler(icon->handlerID);
+
+	if (icon->preview_handler)
+		WMDeleteTimerHandler(icon->preview_handler);
 
 	if (icon->icon_win) {
 		int x = 0, y = 0;
@@ -352,6 +370,8 @@ void wIconChangeTitle(WIcon *icon, WWindow *wwin)
 	if (!icon->icon_name)
 		if (!wGetIconName(dpy, wwin->client_win, &icon->icon_name))
 			icon->icon_name = wNETWMGetWindowName(wwin->client_win);
+
+	captureWindowPreview(wwin);
 }
 
 RImage *wIconValidateIconSize(RImage *icon, int max_size)
@@ -879,7 +899,7 @@ static void miniwindowDblClick(WObjDescriptor *desc, XEvent *event)
 
 	assert(icon->owner != NULL);
 
-	wDeiconifyWindow(icon->owner);
+	wDeiconifyWindow(icon->owner, False);
 }
 
 static void miniwindowMouseDown(WObjDescriptor *desc, XEvent *event)
@@ -975,6 +995,607 @@ static void miniwindowMouseDown(WObjDescriptor *desc, XEvent *event)
 				miniwindowDblClick(desc, event);
 			return;
 
+		}
+	}
+}
+
+static void revealFusedWindow(WWindow *wwin, Bool bringHere)
+{
+	WScreen *scr = wwin->screen_ptr;
+
+	if (!bringHere) {
+		wMakeWindowVisible(wwin);
+		return;
+	}
+
+	if (wwin->frame->workspace != scr->current_workspace)
+		wWindowChangeWorkspace(wwin, scr->current_workspace);
+
+	if (wwin->flags.shaded)
+		wUnshadeWindow(wwin);
+
+	if (wwin->flags.hidden) {
+		WApplication *app = wApplicationOf(wwin->main_window);
+
+		if (app) {
+			app->last_focused = wwin;
+			wUnhideApplication(app, False, bringHere);
+		}
+	}
+
+	if (wwin->flags.miniaturized) {
+		wDeiconifyWindow(wwin, bringHere);
+	} else {
+		if (!WFLAGP(wwin, no_focusable))
+			wSetFocusTo(scr, wwin);
+		wRaiseFrame(wwin->frame->core);
+	}
+}
+
+void fusedIconMouseDown(WObjDescriptor *desc, XEvent *event)
+{
+	WIcon *icon = desc->parent;
+	WWindow *wwin = icon->owner;
+	WScreen *scr = icon->core->screen_ptr;
+	WApplication *wapp;
+	XEvent ev;
+	int x, y;
+	int dx = event->xbutton.x, dy = event->xbutton.y;
+	int grabbed = 0;
+	int clickButton = event->xbutton.button;
+	Bool hasMoved = False;
+
+	if (WCHECK_STATE(WSTATE_MODAL))
+		return;
+
+	assert(wwin != NULL);
+
+	x = wwin->icon_x;
+	y = wwin->icon_y;
+	wapp = wApplicationOf(wwin->main_window);
+
+	if (IsDoubleClick(scr, event)) {
+		if (event->xbutton.button == Button1)
+			revealFusedWindow(wwin, event->xbutton.state & ShiftMask);
+		return;
+	}
+
+	switch (event->xbutton.button) {
+	case Button1:
+		break;
+	case Button2:
+		if (wapp)
+			relaunchApplication(wapp);
+		return;
+	case Button3:
+		{
+			WObjDescriptor *mdesc;
+
+			if (!wapp) {
+				OpenMiniwindowMenu(wwin, event->xbutton.x_root, event->xbutton.y_root);
+				mdesc = &scr->window_menu->menu->descriptor;
+				event->xbutton.send_event = True;
+				(*mdesc->handle_mousedown) (mdesc, event);
+				return;
+			}
+
+			OpenWindowIconMenu(wwin, event->xbutton.x_root, event->xbutton.y_root);
+			if (!scr->fused_icon_menu)
+				return;
+
+			mdesc = &scr->fused_icon_menu->menu->descriptor;
+			event->xbutton.send_event = True;
+			(*mdesc->handle_mousedown) (mdesc, event);
+
+			return;
+		}
+	default:
+		return;
+	}
+
+	if (wapp && wapp->app_icon && wapp->app_icon->icon == icon && wapp->app_icon->dock) {
+		wHandleAppIconMove(wapp->app_icon, event);
+		return;
+	}
+
+	if (event->xbutton.state & MOD_MASK)
+		wLowerFrame(icon->core);
+	else
+		wRaiseFrame(icon->core);
+
+	if (XGrabPointer(dpy, icon->core->window, False, ButtonMotionMask
+			 | ButtonReleaseMask | ButtonPressMask, GrabModeAsync,
+			 GrabModeAsync, None, None, CurrentTime) != GrabSuccess) {
+	}
+	while (1) {
+		WMMaskEvent(dpy, PointerMotionMask | ButtonReleaseMask | ButtonPressMask
+			    | ButtonMotionMask | ExposureMask, &ev);
+		switch (ev.type) {
+		case Expose:
+			WMHandleEvent(&ev);
+			break;
+
+		case MotionNotify:
+			hasMoved = True;
+			if (!grabbed) {
+				if (abs(dx - ev.xmotion.x) >= MOVE_THRESHOLD
+				    || abs(dy - ev.xmotion.y) >= MOVE_THRESHOLD) {
+					XChangeActivePointerGrab(dpy, ButtonMotionMask
+								 | ButtonReleaseMask | ButtonPressMask,
+								 wPreferences.cursor[WCUR_MOVE], CurrentTime);
+					grabbed = 1;
+				} else {
+					break;
+				}
+			}
+			x = ev.xmotion.x_root - dx;
+			y = ev.xmotion.y_root - dy;
+			XMoveWindow(dpy, icon->core->window, x, y);
+			break;
+
+		case ButtonPress:
+			break;
+
+		case ButtonRelease:
+			if (ev.xbutton.button != clickButton)
+				break;
+
+			if (wwin->icon_x != x || wwin->icon_y != y)
+				wwin->flags.icon_moved = 1;
+
+			XMoveWindow(dpy, icon->core->window, x, y);
+
+			wwin->icon_x = x;
+			wwin->icon_y = y;
+			XUngrabPointer(dpy, CurrentTime);
+
+			if (wPreferences.auto_arrange_icons)
+				wArrangeIcons(wwin->screen_ptr, True);
+
+			if (event->xbutton.state & ShiftMask)
+				revealFusedWindow(wwin, True);
+			else if (wPreferences.single_click && !hasMoved)
+				revealFusedWindow(wwin, False);
+			return;
+		}
+	}
+}
+
+static int fusedGroupCountsWindow(WWindow *wwin, WApplication *wapp)
+{
+	if (!wwin || !wapp || wwin->flags.internal_window)
+		return 0;
+	if (wwin->main_window != wapp->main_window)
+		return 0;
+	if (!fusedIconAppliesToWindow(wPreferences.fuse_window_icons,
+				      wwin->transient_for != None
+				      && wwin->transient_for != wwin->screen_ptr->root_win,
+				      wwin->flags.net_handle_icon,
+				      WFLAGP(wwin, no_appicon),
+				      WFLAGP(wwin, no_miniaturizable)))
+		return 0;
+	return 1;
+}
+
+static WFusedGroup *fusedGroupForApplication(WScreen *scr, WApplication *wapp)
+{
+	WFusedGroup *group;
+
+	if (!scr || !wapp)
+		return NULL;
+
+	for (group = scr->fused_groups; group != NULL; group = group->next)
+		if (group->wapp == wapp)
+			return group;
+
+	return NULL;
+}
+
+Bool fusedGroupIsActive(WApplication *wapp)
+{
+	WScreen *scr;
+
+	if (!wapp || !wapp->main_window_desc)
+		return False;
+
+	scr = wapp->main_window_desc->screen_ptr;
+	return fusedGroupForApplication(scr, wapp) != NULL ? True : False;
+}
+
+Bool fusedGroupVisibleOnWorkspace(WFusedGroup *group, int workspace)
+{
+	WWindow *wwin;
+	int *workspaces;
+	int *omnipresent;
+	Bool result;
+	int count;
+	int i;
+
+	count = group ? group->count : 0;
+
+	if (count <= 0)
+		return wPreferences.sticky_icons ? True : False;
+
+	workspaces = wmalloc(count * sizeof(int));
+	omnipresent = wmalloc(count * sizeof(int));
+
+	for (i = 0; i < count; i++) {
+		wwin = group->windows[i];
+		workspaces[i] = wwin ? wwin->frame->workspace : -1;
+		omnipresent[i] = wwin ? IS_OMNIPRESENT(wwin) : 0;
+	}
+
+	result = fusedGroupShowsOnWorkspace(workspaces, omnipresent, count,
+					    wPreferences.sticky_icons, workspace) ? True : False;
+
+	wfree(workspaces);
+	wfree(omnipresent);
+
+	return result;
+}
+
+static int fusedGroupCountWindows(WScreen *scr, WApplication *wapp)
+{
+	WWindow *wwin;
+	int count = 0;
+
+	for (wwin = scr->focused_window; wwin != NULL; wwin = wwin->prev)
+		if (fusedGroupCountsWindow(wwin, wapp))
+			count++;
+
+	return count;
+}
+
+static void fusedGroupSetWindows(WFusedGroup *group, int count)
+{
+	WScreen *scr = group->icon->core->screen_ptr;
+	WWindow *wwin;
+	int i = 0;
+
+	if (group->windows)
+		wfree(group->windows);
+
+	group->windows = NULL;
+	group->count = 0;
+
+	if (count <= 0)
+		return;
+
+	group->windows = wmalloc(count * sizeof(WWindow *));
+	for (wwin = scr->focused_window; wwin != NULL && i < count; wwin = wwin->prev)
+		if (fusedGroupCountsWindow(wwin, group->wapp))
+			group->windows[i++] = wwin;
+
+	group->count = i;
+}
+
+static const char *fusedGroupName(WApplication *wapp)
+{
+	WWindow *main = wapp ? wapp->main_window_desc : NULL;
+
+	if (main && main->wm_class && main->wm_class[0] != '\0')
+		return main->wm_class;
+	if (main && main->wm_instance && main->wm_instance[0] != '\0')
+		return main->wm_instance;
+
+	return _("Application");
+}
+
+static void fusedGroupSetTitle(WFusedGroup *group)
+{
+	const char *name = fusedGroupName(group->wapp);
+	int len = strlen(name) + 32;
+	char *title = wmalloc(len);
+
+	if (!title)
+		return;
+
+	snprintf(title, len, "%s (%d)", name, group->count);
+
+	/* The icon borrows the title; the group owns it, so wIconDestroy()
+	 * must not free it (it frees with XFree, which does not match wmalloc). */
+	if (group->title)
+		wfree(group->title);
+	group->title = title;
+	group->icon->icon_name = title;
+
+	wIconPaint(group->icon);
+}
+
+static void fusedGroupHideWindowIcons(WFusedGroup *group)
+{
+	int i;
+
+	for (i = 0; i < group->count; i++) {
+		WWindow *wwin = group->windows[i];
+
+		if (wwin && wwin->icon && wwin->icon->mapped) {
+			XUnmapWindow(dpy, wwin->icon->core->window);
+			wwin->icon->mapped = 0;
+		}
+	}
+}
+
+static WIcon *fusedGroupCreateIcon(WScreen *scr, WApplication *wapp)
+{
+	WWindow *main = wapp->main_window_desc;
+	WIcon *icon = icon_create_core(scr, 0, 0);
+
+	icon->tile_type = TILE_NORMAL;
+	icon->show_title = 1;
+
+	set_icon_image_from_database(icon, main ? main->wm_instance : NULL,
+				     main ? main->wm_class : NULL, NULL);
+	wIconUpdate(icon);
+
+	WMAddNotificationObserver(appearanceObserver, icon, WNIconAppearanceSettingsChanged, icon);
+	WMAddNotificationObserver(tileObserver, icon, WNIconTileSettingsChanged, icon);
+
+	return icon;
+}
+
+static WSavedFusedGroup *savedFusedGroupForApplication(WScreen *scr, WApplication *wapp)
+{
+	char *identifier = wApplicationIdentifier(wapp);
+	WSavedFusedGroup *saved = NULL;
+
+	if (!identifier)
+		return NULL;
+
+	for (saved = scr->saved_fused_groups; saved != NULL; saved = saved->next) {
+		if (saved->name && strcmp(saved->name, identifier) == 0)
+			break;
+	}
+
+	wfree(identifier);
+	return saved;
+}
+
+static WFusedGroup *fusedGroupCreate(WScreen *scr, WApplication *wapp, int count)
+{
+	WFusedGroup *group = wmalloc(sizeof(WFusedGroup));
+	WSavedFusedGroup *saved;
+
+	memset(group, 0, sizeof(*group));
+	group->wapp = wapp;
+	group->icon = fusedGroupCreateIcon(scr, wapp);
+	group->icon->core->descriptor.parent_type = WCLASS_FUSED_GROUP;
+	group->icon->core->descriptor.parent = group;
+	group->icon->core->descriptor.handle_expose = fusedGroupExpose;
+	group->icon->core->descriptor.handle_mousedown = fusedGroupMouseDown;
+
+	/* Keep the saved position only when it is still on the current screen;
+	 * otherwise let PlaceIcon() pack the yard again. */
+	saved = savedFusedGroupForApplication(scr, wapp);
+	if (saved && fusedIconPositionOnScreen(saved->x, saved->y,
+					       scr->scr_width, scr->scr_height)) {
+		group->x = saved->x;
+		group->y = saved->y;
+	} else {
+		PlaceIcon(scr, &group->x, &group->y, wGetHeadForWindow(wapp->main_window_desc));
+	}
+	XMoveWindow(dpy, group->icon->core->window, group->x, group->y);
+
+	AddToStackList(group->icon->core);
+	wLowerFrame(group->icon->core);
+
+	group->next = scr->fused_groups;
+	scr->fused_groups = group;
+
+	fusedGroupSetWindows(group, count);
+	fusedGroupSetTitle(group);
+	fusedGroupHideWindowIcons(group);
+
+	group->icon->mapped = 0;
+	if (fusedGroupVisibleOnWorkspace(group, scr->current_workspace)) {
+		group->icon->mapped = 1;
+		XMapWindow(dpy, group->icon->core->window);
+	}
+
+	return group;
+}
+
+static void fusedGroupDestroy(WFusedGroup *group)
+{
+	WScreen *scr;
+	WFusedGroup *tmp;
+	int i;
+
+	if (!group)
+		return;
+
+	scr = group->icon->core->screen_ptr;
+
+	if (scr->fused_groups == group) {
+		scr->fused_groups = group->next;
+	} else {
+		for (tmp = scr->fused_groups; tmp != NULL; tmp = tmp->next) {
+			if (tmp->next == group) {
+				tmp->next = group->next;
+				break;
+			}
+		}
+	}
+
+	RemoveFromStackList(group->icon->core);
+	/* icon_name is the group's title (wmalloc'ed); detach it before the
+	 * icon frees it with XFree. */
+	group->icon->icon_name = NULL;
+	wIconDestroy(group->icon);
+	if (group->title)
+		wfree(group->title);
+
+	/* Give the per-window icons back where they belong. */
+	for (i = 0; i < group->count; i++) {
+		WWindow *wwin = group->windows[i];
+
+		if (!wwin || !wwin->icon || wwin->flags.hidden)
+			continue;
+		if (wwin->frame->workspace != scr->current_workspace
+		    && !IS_OMNIPRESENT(wwin) && !wPreferences.sticky_icons)
+			continue;
+		if (!wwin->icon->mapped) {
+			wwin->icon->mapped = 1;
+			XMapWindow(dpy, wwin->icon->core->window);
+		}
+	}
+
+	if (group->windows)
+		wfree(group->windows);
+	wfree(group);
+}
+
+void fusedGroupUpdateForApplication(WApplication *wapp)
+{
+	WScreen *scr;
+	WFusedGroup *group;
+	int count;
+
+	if (!wapp || !wapp->main_window_desc)
+		return;
+
+	scr = wapp->main_window_desc->screen_ptr;
+	if (!scr)
+		return;
+
+	group = fusedGroupForApplication(scr, wapp);
+	count = fusedGroupCountWindows(scr, wapp);
+
+	if (group)
+		fusedGroupSetWindows(group, count);
+
+	if (!wPreferences.fuse_window_icons || !wPreferences.fuse_window_icon_grouping) {
+		if (group)
+			fusedGroupDestroy(group);
+		return;
+	}
+
+	if (count > wPreferences.fuse_window_icon_group_threshold) {
+		if (!group)
+			group = fusedGroupCreate(scr, wapp, count);
+		fusedGroupSetTitle(group);
+		fusedGroupHideWindowIcons(group);
+		if (fusedGroupVisibleOnWorkspace(group, scr->current_workspace)) {
+			if (!group->icon->mapped) {
+				group->icon->mapped = 1;
+				XMapWindow(dpy, group->icon->core->window);
+			}
+		} else if (group->icon->mapped) {
+			group->icon->mapped = 0;
+			XUnmapWindow(dpy, group->icon->core->window);
+		}
+	} else if (group) {
+		fusedGroupDestroy(group);
+	}
+}
+
+void fusedGroupDestroyForApplication(WApplication *wapp)
+{
+	WScreen *scr;
+	WFusedGroup *group;
+
+	if (!wapp || !wapp->main_window_desc)
+		return;
+
+	scr = wapp->main_window_desc->screen_ptr;
+	if (!scr)
+		return;
+
+	group = fusedGroupForApplication(scr, wapp);
+	if (group)
+		fusedGroupDestroy(group);
+}
+
+void fusedGroupsForgetWindow(WWindow *wwin)
+{
+	WFusedGroup *group;
+	int i;
+
+	for (group = wwin->screen_ptr->fused_groups; group != NULL; group = group->next)
+		for (i = 0; i < group->count; i++)
+			if (group->windows[i] == wwin)
+				group->windows[i] = NULL;
+}
+
+void fusedGroupsSwitchWorkspace(WScreen *scr, int workspace)
+{
+	WFusedGroup *group;
+
+	if (!scr)
+		return;
+
+	for (group = scr->fused_groups; group != NULL; group = group->next) {
+		if (fusedGroupVisibleOnWorkspace(group, workspace)) {
+			if (!group->icon->mapped) {
+				group->icon->mapped = 1;
+				XMapWindow(dpy, group->icon->core->window);
+			}
+		} else if (group->icon->mapped) {
+			group->icon->mapped = 0;
+			XUnmapWindow(dpy, group->icon->core->window);
+		}
+	}
+}
+
+static void fusedGroupExpose(WObjDescriptor *desc, XEvent *event)
+{
+	WFusedGroup *group = desc->parent;
+
+	(void) event;
+
+	wIconPaint(group->icon);
+}
+
+static void fusedGroupReveal(WFusedGroup *group)
+{
+	WApplication *wapp = group->wapp;
+
+	if (!wapp || !wapp->main_window_desc)
+		return;
+
+	/* True: minimized windows come back too. It also gives the focus to the
+	 * last focused window. */
+	wUnhideApplication(wapp, True, False);
+}
+
+static void fusedGroupMouseDown(WObjDescriptor *desc, XEvent *event)
+{
+	WFusedGroup *group = desc->parent;
+	WScreen *scr = group->icon->core->screen_ptr;
+
+	if (!group->wapp)
+		return;
+
+	if (WCHECK_STATE(WSTATE_MODAL))
+		return;
+
+	if (IsDoubleClick(scr, event)) {
+		if (event->xbutton.button == Button1)
+			fusedGroupReveal(group);
+		return;
+	}
+
+	switch (event->xbutton.button) {
+	case Button1:
+		wRaiseFrame(group->icon->core);
+		if (wPreferences.single_click)
+			fusedGroupReveal(group);
+		return;
+	case Button2:
+		relaunchApplication(group->wapp);
+		return;
+	case Button3:
+		{
+			WObjDescriptor *mdesc;
+
+			openApplicationMenu(group->wapp, event->xbutton.x_root, event->xbutton.y_root);
+			if (!scr->icon_menu)
+				return;
+
+			mdesc = &scr->icon_menu->menu->descriptor;
+			event->xbutton.send_event = True;
+			(*mdesc->handle_mousedown) (mdesc, event);
+			return;
 		}
 	}
 }

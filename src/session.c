@@ -97,6 +97,9 @@ static WMPropList *sHidden;
 static WMPropList *sGeometry;
 static WMPropList *sShortcutMask;
 static WMPropList *sMarkKey;
+static WMPropList *sIconPosition;
+static WMPropList *sFusedGroups;
+static WMPropList *sCount;
 
 static WMPropList *sDock;
 static WMPropList *sYes, *sNo;
@@ -119,6 +122,9 @@ static void make_keys(void)
 	sDock = WMCreatePLString("Dock");
 	sShortcutMask = WMCreatePLString("ShortcutMask");
 	sMarkKey = WMCreatePLString("MarkKey");
+	sIconPosition = WMCreatePLString("IconPosition");
+	sFusedGroups = WMCreatePLString("FusedGroups");
+	sCount = WMCreatePLString("Count");
 
 	sYes = WMCreatePLString("Yes");
 	sNo = WMCreatePLString("No");
@@ -234,6 +240,15 @@ static WMPropList *makeWindowState(WWindow * wwin, WApplication * wapp)
 			WMReleasePropList(mark_key_pl);
 		}
 
+		if (wwin->flags.icon_moved) {
+			WMPropList *position;
+
+			snprintf(buffer, sizeof(buffer), "%i,%i", wwin->icon_x, wwin->icon_y);
+			position = WMCreatePLString(buffer);
+			WMPutInPLDictionary(win_state, sIconPosition, position);
+			WMReleasePropList(position);
+		}
+
 		WMReleasePropList(name);
 		WMReleasePropList(cmd);
 		WMReleasePropList(workspace);
@@ -328,6 +343,46 @@ void wSessionSaveState(WScreen * scr)
 	WMPutInPLDictionary(scr->session_state, sApplications, list);
 	WMReleasePropList(list);
 
+	/* Save the applications that are currently grouped, with their window
+	 * count and the group icon position, so a restart brings them back
+	 * grouped where the user left them. */
+	{
+		WMPropList *groups;
+		WFusedGroup *group;
+		char buffer[64];
+
+		groups = WMCreatePLArray(NULL);
+
+		for (group = scr->fused_groups; group != NULL; group = group->next) {
+			WMPropList *entry, *name, *count, *position;
+			char *identifier = wApplicationIdentifier(group->wapp);
+
+			if (!identifier)
+				continue;
+
+			name = WMCreatePLString(identifier);
+			wfree(identifier);
+
+			snprintf(buffer, sizeof(buffer), "%i", group->count);
+			count = WMCreatePLString(buffer);
+
+			snprintf(buffer, sizeof(buffer), "%i,%i", group->x, group->y);
+			position = WMCreatePLString(buffer);
+
+			entry = WMCreatePLDictionary(sName, name, sCount, count,
+						     sIconPosition, position, NULL);
+			WMAddToPLArray(groups, entry);
+			WMReleasePropList(entry);
+			WMReleasePropList(name);
+			WMReleasePropList(count);
+			WMReleasePropList(position);
+		}
+
+		WMRemoveFromPLDictionary(scr->session_state, sFusedGroups);
+		WMPutInPLDictionary(scr->session_state, sFusedGroups, groups);
+		WMReleasePropList(groups);
+	}
+
 	wks = WMCreatePLString(scr->workspaces[scr->current_workspace]->name);
 	WMPutInPLDictionary(scr->session_state, sWorkspace, wks);
 	WMReleasePropList(wks);
@@ -344,6 +399,7 @@ void wSessionClearState(WScreen * scr)
 
 	WMRemoveFromPLDictionary(scr->session_state, sApplications);
 	WMRemoveFromPLDictionary(scr->session_state, sWorkspace);
+	WMRemoveFromPLDictionary(scr->session_state, sFusedGroups);
 }
 
 static pid_t execCommand(WScreen *scr, char *command)
@@ -444,7 +500,67 @@ static WSavedState *getWindowState(WScreen * scr, WMPropList * win_state)
 		}
 	}
 
+	state->icon_moved = 0;
+	state->icon_x = 0;
+	state->icon_y = 0;
+	value = WMGetFromPLDictionary(win_state, sIconPosition);
+	if (value && WMIsPLString(value)) {
+		char *s = WMGetFromPLString(value);
+
+		if (s && sscanf(s, "%i,%i", &state->icon_x, &state->icon_y) == 2)
+			state->icon_moved = 1;
+	}
+
 	return state;
+}
+
+static void restoreSavedFusedGroups(WScreen *scr, WMPropList *groups)
+{
+	WSavedFusedGroup *saved, *next;
+	int i, count;
+
+	/* Drop any list left over from a previous restore. */
+	for (saved = scr->saved_fused_groups; saved != NULL; saved = next) {
+		next = saved->next;
+		if (saved->name)
+			wfree(saved->name);
+		wfree(saved);
+	}
+	scr->saved_fused_groups = NULL;
+
+	count = WMGetPropListItemCount(groups);
+	for (i = 0; i < count; i++) {
+		WMPropList *entry = WMGetFromPLArray(groups, i);
+		WMPropList *value;
+		char *name = NULL;
+
+		value = WMGetFromPLDictionary(entry, sName);
+		if (value && WMIsPLString(value))
+			name = WMGetFromPLString(value);
+
+		if (!name || name[0] == '\0')
+			continue;
+
+		saved = wmalloc(sizeof(WSavedFusedGroup));
+		memset(saved, 0, sizeof(*saved));
+		saved->name = wstrdup(name);
+
+		value = WMGetFromPLDictionary(entry, sCount);
+		saved->count = (value != NULL) ? (int)getInt(value) : 0;
+
+		value = WMGetFromPLDictionary(entry, sIconPosition);
+		if (value && WMIsPLString(value)) {
+			char *pos = WMGetFromPLString(value);
+
+			if (!pos || sscanf(pos, "%i,%i", &saved->x, &saved->y) != 2)
+				saved->x = saved->y = -1;
+		} else {
+			saved->x = saved->y = -1;
+		}
+
+		saved->next = scr->saved_fused_groups;
+		scr->saved_fused_groups = saved;
+	}
 }
 
 void wSessionRestoreState(WScreen *scr)
@@ -465,6 +581,13 @@ void wSessionRestoreState(WScreen *scr)
 		return;
 
 	WMPLSetCaseSensitive(True);
+
+	/* Read back the saved group list (if any) so grouped applications come
+	 * back grouped at the position the user left the group icon. Missing or
+	 * malformed entries mean "not grouped", so old sessions load unchanged. */
+	value = WMGetFromPLDictionary(scr->session_state, sFusedGroups);
+	if (value && WMIsPLArray(value))
+		restoreSavedFusedGroups(scr, value);
 
 	apps = WMGetFromPLDictionary(scr->session_state, sApplications);
 	if (!apps)

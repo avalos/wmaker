@@ -25,6 +25,7 @@ POTFILES  = \
 	$(top_srcdir)/src/dockedapp.c \
 	$(top_srcdir)/src/event.c \
 	$(top_srcdir)/src/framewin.c \
+	$(top_srcdir)/src/fusedicons.c \
 	$(top_srcdir)/src/geomview.c \
 	$(top_srcdir)/src/icon.c \
 	$(top_srcdir)/src/keytree.c \

@@ -49,6 +49,7 @@
 #include "placement.h"
 #include "misc.h"
 #include "event.h"
+#include "fusedicons.h"
 
 
 #ifndef HAVE_FLOAT_MATHFUNC
@@ -135,6 +136,14 @@ void wSetFocusTo(WScreen *scr, WWindow *wwin)
 		old_scr = scr;
 
 	old_focused = old_scr->focused_window;
+
+	/* Refresh the preview of the window that is about to lose the focus. */
+	if (old_focused && old_focused != wwin && old_focused->flags.mapped)
+		captureWindowPreview(old_focused);
+
+	/* And of the one that gains it. */
+	if (wwin && wwin != old_focused && wwin->flags.mapped)
+		captureWindowPreview(wwin);
 
 	w_global.timestamp.focus_change = timestamp;
 
@@ -1484,13 +1493,123 @@ static int getAnimationGeometry(WWindow *wwin, int *ix, int *iy, int *iw, int *i
 }
 #endif	/* USE_ANIMATIONS */
 
+static void captureWindowPreviewNow(WWindow *wwin)
+{
+	WIcon *icon;
+	WScreen *scr;
+	XWindowAttributes attribs;
+	XImage *pimg;
+	RImage *mini_preview;
+	unsigned int w, h;
+	int x, y;
+	Window baz;
+
+	if (!wwin || !(icon = wwin->icon))
+		return;
+
+	icon->preview_handler = NULL;
+
+	/* Only a moving, visible window can be captured. Not being able to
+	 * capture it then is expected, so it is not a failure. */
+	if (!wwin->flags.mapped || wwin->flags.shaded || wwin->flags.miniaturized)
+		return;
+
+	if (!wwin->client_win)
+		goto fallback;
+
+	if (!XGetWindowAttributes(dpy, wwin->client_win, &attribs))
+		return;
+
+	if (attribs.map_state != IsViewable)
+		return;
+
+	scr = wwin->screen_ptr;
+
+	XTranslateCoordinates(dpy, wwin->client_win, scr->root_win, 0, 0, &x, &y, &baz);
+
+	w = attribs.width;
+	h = attribs.height;
+
+	if (x - attribs.x + attribs.width > scr->scr_width)
+		w = scr->scr_width - x + attribs.x;
+
+	if (y - attribs.y + attribs.height > scr->scr_height)
+		h = scr->scr_height - y + attribs.y;
+
+	if (w == 0 || h == 0)
+		goto fallback;
+
+	pimg = XGetImage(dpy, wwin->client_win, 0, 0, w, h, AllPlanes, ZPixmap);
+	if (!pimg)
+		goto fallback;
+
+	mini_preview = RCreateImageFromXImage(scr->rcontext, pimg, NULL);
+	XDestroyImage(pimg);
+
+	if (!mini_preview)
+		goto fallback;
+
+	set_icon_minipreview(icon, mini_preview);
+	RReleaseImage(mini_preview);
+	return;
+
+      fallback:
+	set_icon_image_from_database(icon, wwin->wm_instance, wwin->wm_class, NULL);
+	wIconUpdate(icon);
+
+	if (!icon->preview_failed) {
+		const char *title;
+		char title_buf[32];
+
+		icon->preview_failed = 1;
+
+		if (wwin->frame && wwin->frame->title) {
+			title = wwin->frame->title;
+		} else {
+			snprintf(title_buf, sizeof(title_buf), "(id=0x%lx)", wwin->client_win);
+			title = title_buf;
+		}
+		wwarning(_("creation of mini-preview failed for window \"%s\""), title);
+	}
+}
+
+static void captureWindowPreviewIdle(void *data)
+{
+	captureWindowPreviewNow((WWindow *)data);
+}
+
+void captureWindowPreview(WWindow *wwin)
+{
+	if (!wwin || !wwin->icon)
+		return;
+
+	if (wwin->icon->preview_handler)
+		return;
+
+	wwin->icon->preview_handler = WMAddTimerHandler(0, captureWindowPreviewIdle, wwin);
+}
+
+static void flushWindowPreview(WWindow *wwin)
+{
+	if (!wwin || !wwin->icon || !wwin->icon->preview_handler)
+		return;
+
+	WMDeleteTimerHandler(wwin->icon->preview_handler);
+	wwin->icon->preview_handler = NULL;
+	captureWindowPreviewNow(wwin);
+}
+
 void wIconifyWindow(WWindow *wwin)
 {
 	XWindowAttributes attribs;
+	WApplication *wapp;
 	int present;
+	Bool icon_created = False;
 
 	if (!XGetWindowAttributes(dpy, wwin->client_win, &attribs))
 		return; /* the window doesn't exist anymore */
+
+	wapp = wApplicationOf(wwin->main_window);
 
 	if (wwin->flags.miniaturized)
 		return; /* already miniaturized */
@@ -1513,54 +1632,25 @@ void wIconifyWindow(WWindow *wwin)
 	}
 
 	if (!wPreferences.disable_miniwindows && !wwin->flags.net_handle_icon) {
-		if (!wwin->flags.icon_moved)
-			PlaceIcon(wwin->screen_ptr, &wwin->icon_x, &wwin->icon_y, wGetHeadForWindow(wwin));
+		if (wPreferences.fuse_window_icons && wwin->icon != NULL) {
+			if (!fusedGroupIsActive(wapp))
+				wwin->icon->mapped = 1;
+		} else {
+			if (!wwin->flags.icon_moved)
+				PlaceIcon(wwin->screen_ptr, &wwin->icon_x, &wwin->icon_y, wGetHeadForWindow(wwin));
 
-		wwin->icon = icon_create_for_wwindow(wwin);
-		wwin->icon->mapped = 1;
-
-		/* extract the window screenshot every time, as the option can be enable anytime */
-		if (wwin->client_win && wwin->flags.mapped) {
-			RImage *mini_preview;
-			XImage *pimg;
-			unsigned int w, h;
-			int x, y;
-			Window baz;
-
-			XRaiseWindow(dpy, wwin->frame->core->window);
-			XTranslateCoordinates(dpy, wwin->client_win, wwin->screen_ptr->root_win, 0, 0, &x, &y, &baz);
-
-			w = attribs.width;
-			h = attribs.height;
-
-			if (x - attribs.x + attribs.width > wwin->screen_ptr->scr_width)
-				w = wwin->screen_ptr->scr_width - x + attribs.x;
-
-			if (y - attribs.y + attribs.height > wwin->screen_ptr->scr_height)
-				h = wwin->screen_ptr->scr_height - y + attribs.y;
-
-			pimg = XGetImage(dpy, wwin->client_win, 0, 0, w, h, AllPlanes, ZPixmap);
-			if (pimg) {
-				mini_preview = RCreateImageFromXImage(wwin->screen_ptr->rcontext, pimg, NULL);
-				XDestroyImage(pimg);
-
-				if (mini_preview) {
-					set_icon_minipreview(wwin->icon, mini_preview);
-					RReleaseImage(mini_preview);
-				} else {
-					const char *title;
-					char title_buf[32];
-
-					if (wwin->frame->title) {
-						title = wwin->frame->title;
-					} else {
-						snprintf(title_buf, sizeof(title_buf), "(id=0x%lx)", wwin->client_win);
-						title = title_buf;
-					}
-					wwarning(_("creation of mini-preview failed for window \"%s\""), title);
-				}
-			}
+			wwin->icon = icon_create_for_wwindow(wwin);
+			if (wPreferences.fuse_window_icons)
+				wIconSetupFused(wwin->icon);
+			wwin->icon->mapped = 1;
+			icon_created = True;
 		}
+
+		/* Snapshot the window before it goes away. Raise it first so an
+		 * obscured window still yields its full preview. */
+		XRaiseWindow(dpy, wwin->frame->core->window);
+		captureWindowPreview(wwin);
+		flushWindowPreview(wwin);
 	}
 
 	wwin->flags.miniaturized = 1;
@@ -1595,12 +1685,15 @@ void wIconifyWindow(WWindow *wwin)
 	wwin->flags.skip_next_animation = 0;
 
 	if (!wPreferences.disable_miniwindows && !wwin->flags.net_handle_icon) {
-		if (wwin->screen_ptr->current_workspace == wwin->frame->workspace ||
-		    IS_OMNIPRESENT(wwin) || wPreferences.sticky_icons)
+		if ((wwin->screen_ptr->current_workspace == wwin->frame->workspace ||
+		     IS_OMNIPRESENT(wwin) || wPreferences.sticky_icons)
+		    && !fusedGroupIsActive(wapp))
 			XMapWindow(dpy, wwin->icon->core->window);
 
-		AddToStackList(wwin->icon->core);
-		wLowerFrame(wwin->icon->core);
+		if (!wPreferences.fuse_window_icons || icon_created) {
+			AddToStackList(wwin->icon->core);
+			wLowerFrame(wwin->icon->core);
+		}
 	}
 
 	if (present) {
@@ -1654,7 +1747,7 @@ void wIconifyWindow(WWindow *wwin)
 		wArrangeIcons(wwin->screen_ptr, True);
 }
 
-void wDeiconifyWindow(WWindow *wwin)
+void wDeiconifyWindow(WWindow *wwin, Bool bringToCurrentWorkspace)
 {
 	/* Let's avoid changing workspace while deiconifying */
 	w_global.ignore_workspace_change = True;
@@ -1663,7 +1756,9 @@ void wDeiconifyWindow(WWindow *wwin)
 	int netwm_hidden = wwin->flags.net_show_desktop &&
 	    wwin->frame->workspace != wwin->screen_ptr->current_workspace;
 
-	if (!netwm_hidden)
+	if (!netwm_hidden &&
+	    fusedIconBringsWindowHere(wPreferences.fuse_window_icons,
+				      bringToCurrentWorkspace))
 		wWindowChangeWorkspace(wwin, wwin->screen_ptr->current_workspace);
 
 	if (!wwin->flags.miniaturized) {
@@ -1675,7 +1770,7 @@ void wDeiconifyWindow(WWindow *wwin)
 		WWindow *owner = recursiveTransientFor(wwin);
 
 		if (owner && owner->flags.miniaturized) {
-			wDeiconifyWindow(owner);
+			wDeiconifyWindow(owner, bringToCurrentWorkspace);
 			wSetFocusTo(wwin->screen_ptr, wwin);
 			wRaiseFrame(wwin->frame->core);
 			w_global.ignore_workspace_change = False;
@@ -1693,7 +1788,7 @@ void wDeiconifyWindow(WWindow *wwin)
 		 * it seems to me we might break behaviour this way.
 		 */
 		if (!wPreferences.disable_miniwindows && !wwin->flags.net_handle_icon
-		    && wwin->icon != NULL) {
+		    && !wPreferences.fuse_window_icons && wwin->icon != NULL) {
 			if (wwin->icon->selected)
 				wIconSelect(wwin->icon);
 
@@ -1727,7 +1822,7 @@ void wDeiconifyWindow(WWindow *wwin)
 	}
 
 	if (!wPreferences.disable_miniwindows && wwin->icon != NULL
-	    && !wwin->flags.net_handle_icon) {
+	    && !wwin->flags.net_handle_icon && !wPreferences.fuse_window_icons) {
 		RemoveFromStackList(wwin->icon->core);
 		wSetFocusTo(wwin->screen_ptr, wwin);
 		wIconDestroy(wwin->icon);
@@ -2035,7 +2130,8 @@ void wUnhideApplication(WApplication *wapp, Bool miniwindows, Bool bringToCurren
 
 			if (wlist->flags.miniaturized) {
 				if ((bringToCurrentWS || wPreferences.sticky_icons ||
-				     wlist->frame->workspace == scr->current_workspace) && wlist->icon) {
+				     wlist->frame->workspace == scr->current_workspace) && wlist->icon
+				    && !fusedGroupIsActive(wapp)) {
 					if (!wlist->icon->mapped) {
 						int x, y;
 
@@ -2053,7 +2149,7 @@ void wUnhideApplication(WApplication *wapp, Bool miniwindows, Bool bringToCurren
 					wWindowChangeWorkspace(wlist, scr->current_workspace);
 				wlist->flags.hidden = 0;
 				if (miniwindows && wlist->frame->workspace == scr->current_workspace)
-					wDeiconifyWindow(wlist);
+					wDeiconifyWindow(wlist, bringToCurrentWS);
 				WMPostNotificationName(WMNChangedState, wlist, "hide");
 			} else if (wlist->flags.shaded) {
 				if (bringToCurrentWS)
@@ -2109,14 +2205,14 @@ void wShowAllWindows(WScreen *scr)
 		    (scr->current_workspace == wwin->frame->workspace || IS_OMNIPRESENT(wwin))) {
 			if (wwin->flags.miniaturized) {
 				wwin->flags.skip_next_animation = 1;
-				wDeiconifyWindow(wwin);
+				wDeiconifyWindow(wwin, False);
 			} else if (wwin->flags.hidden) {
 				wapp = wApplicationOf(wwin->main_window);
 				if (wapp) {
 					wUnhideApplication(wapp, False, False);
 				} else {
 					wwin->flags.skip_next_animation = 1;
-					wDeiconifyWindow(wwin);
+					wDeiconifyWindow(wwin, False);
 				}
 			}
 		}
@@ -2347,7 +2443,7 @@ void wMakeWindowVisible(WWindow *wwin)
 		}
 	}
 	if (wwin->flags.miniaturized) {
-		wDeiconifyWindow(wwin);
+		wDeiconifyWindow(wwin, False);
 	} else {
 		if (!WFLAGP(wwin, no_focusable))
 			wSetFocusTo(wwin->screen_ptr, wwin);

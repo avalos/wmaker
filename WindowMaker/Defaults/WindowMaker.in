@@ -10,6 +10,9 @@
 	DisableDrawers = NO;
 	ClipMergedInDock = NO;
 	DisableMiniwindows = NO;
+	FuseWindowIcons = YES;
+	FuseWindowIconGrouping = YES;
+	FuseWindowIconGroupThreshold = 10;
 	EnableWorkspacePager = NO;
 	IconPosition = blh;
 	IconificationStyle = Zoom;

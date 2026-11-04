@@ -52,6 +52,29 @@ typedef struct WAppIconChain {
 } WAppIconChain;
 
 
+/* One icon standing in for all the windows of an application that has more
+ * of them than FuseWindowIconGroupThreshold. */
+typedef struct WFusedGroup {
+    struct WApplication *wapp;	       /* application the group belongs to */
+    struct WIcon *icon;		       /* the group icon */
+    char *title;		       /* icon title, owned by the group */
+    struct WWindow **windows;	       /* the windows it represents */
+    int count;			       /* number of windows in the group */
+    int x, y;			       /* group icon position */
+    struct WFusedGroup *next;
+} WFusedGroup;
+
+
+/* A fused group entry read back from a saved session, kept until the
+ * application's windows map and the group is recreated. */
+typedef struct WSavedFusedGroup {
+    char *name;			       /* "wm_instance.wm_class" identifier */
+    int count;			       /* number of windows at save time */
+    int x, y;			       /* group icon position */
+    struct WSavedFusedGroup *next;
+} WSavedFusedGroup;
+
+
 /* Drawers, which are docks, really */
 typedef struct WDrawerChain {
     struct WDock *adrawer;
@@ -112,6 +135,10 @@ typedef struct _WScreen {
     WMArray *fakeGroupLeaders;         /* list of fake window group ids */
 
     struct WAppIcon *app_icon_list;    /* list of all app-icons on screen */
+
+    struct WFusedGroup *fused_groups;  /* group icons for applications over the threshold */
+
+    struct WSavedFusedGroup *saved_fused_groups;  /* fused groups read from a saved session */
 
     struct WApplication *wapp_list;    /* list of all aplications */
 
@@ -241,6 +268,7 @@ typedef struct _WScreen {
     struct WMenu *workspace_menu;      /* workspace operation */
     struct WMenu *window_menu;	       /* window command menu */
     struct WMenu *icon_menu;	       /* icon/appicon menu */
+    struct WMenu *fused_icon_menu;     /* combined application and window menu */
     struct WMenu *workspace_submenu;   /* workspace list for window_menu */
 
     struct WDock *dock;		       /* the application dock */

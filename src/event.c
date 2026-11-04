@@ -638,7 +638,7 @@ static void handleMapRequest(XEvent * ev)
 		}
 		/* deiconify window */
 		if (wwin->flags.miniaturized) {
-			wDeiconifyWindow(wwin);
+			wDeiconifyWindow(wwin, False);
 		} else if (wwin->flags.hidden) {
 			WApplication *wapp = wApplicationOf(wwin->main_window);
 			/* go to the last workspace that the user worked on the app */
@@ -902,7 +902,10 @@ static void handleButtonPress(XEvent * event)
 		}
 		XSync(dpy, 0);
 	} else if (desc->parent_type == WCLASS_APPICON
-		   || desc->parent_type == WCLASS_MINIWINDOW || desc->parent_type == WCLASS_DOCK_ICON) {
+		   || desc->parent_type == WCLASS_MINIWINDOW
+		   || desc->parent_type == WCLASS_FUSED_WINDOW_ICON
+		   || desc->parent_type == WCLASS_FUSED_GROUP
+		   || desc->parent_type == WCLASS_DOCK_ICON) {
 		if (event->xbutton.state & MOD_MASK) {
 			XSync(dpy, 0);
 			XAllowEvents(dpy, AsyncPointer, CurrentTime);
@@ -931,7 +934,7 @@ static void handleMapNotify(XEvent * event)
 	wwin = wWindowFor(event->xmap.event);
 	if (wwin && wwin->client_win == event->xmap.event) {
 		if (wwin->flags.miniaturized) {
-			wDeiconifyWindow(wwin);
+			wDeiconifyWindow(wwin, False);
 		} else {
 			XGrabServer(dpy);
 			wWindowMap(wwin);
@@ -1150,7 +1153,8 @@ static void handleClientMessage(XEvent * event)
 		if (XFindContext(dpy, event->xbutton.window, w_global.context.client_win, (XPointer *) & desc) != XCNOENT) {
 			struct WIcon *icon = NULL;
 
-			if (desc->parent_type == WCLASS_MINIWINDOW) {
+			if (desc->parent_type == WCLASS_MINIWINDOW
+			    || desc->parent_type == WCLASS_FUSED_WINDOW_ICON) {
 				icon = (WIcon *) desc->parent;
 			} else if (desc->parent_type == WCLASS_DOCK_ICON || desc->parent_type == WCLASS_APPICON) {
 				icon = ((WAppIcon *) desc->parent)->icon;

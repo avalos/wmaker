@@ -56,6 +56,7 @@
 #include "window.h"
 #include "winspector.h"
 #include "icon.h"
+#include "fusedicons.h"
 #include "properties.h"
 #include "actions.h"
 #include "client.h"
@@ -243,6 +244,16 @@ void wWindowDestroy(WWindow *wwin)
 		if (wPreferences.auto_arrange_icons)
 			wArrangeIcons(wwin->screen_ptr, True);
 	}
+
+	{
+		WApplication *wapp = wApplicationOf(wwin->main_window);
+
+		/* Its group may be another application's, if the window changed leader. */
+		fusedGroupsForgetWindow(wwin);
+		if (wapp)
+			fusedGroupUpdateForApplication(wapp);
+	}
+
 	if (wwin->net_icon_image)
 		RReleaseImage(wwin->net_icon_image);
 
@@ -982,6 +993,17 @@ WWindow *wManageWindow(WScreen *scr, Window window)
 		} else {
 			workspace = scr->current_workspace;
 		}
+
+		/* Restore the icon position the user saved, but only when it still
+		 * falls on the current screen; otherwise PlaceIcon() repacks it. */
+		if (win_state->state->icon_moved
+		    && fusedIconPositionOnScreen(win_state->state->icon_x,
+						 win_state->state->icon_y,
+						 scr->scr_width, scr->scr_height)) {
+			wwin->icon_x = win_state->state->icon_x;
+			wwin->icon_y = win_state->state->icon_y;
+			wwin->flags.icon_moved = 1;
+		}
 	}
 
 	/* if we're restarting, restore saved state (from hints).
@@ -1407,6 +1429,10 @@ WWindow *wManageWindow(WScreen *scr, Window window)
 		wwin->prev = NULL;
 	}
 
+	/* The group count reads the focus list, which holds this window only from here. */
+	if (wApplicationOf(wwin->main_window))
+		fusedGroupUpdateForApplication(wApplicationOf(wwin->main_window));
+
 	/* raise is set to true if we un-hid the app when this window was born.
 	 * we raise, else old windows of this app will be above this new one. */
 	if (raise)
@@ -1770,8 +1796,52 @@ void wUnmanageWindow(WWindow *wwin, Bool restore, Bool destroyed)
 	XFlush(dpy);
 }
 
+static void wWindowUpdateFusedIcon(WWindow *wwin)
+{
+	WApplication *wapp;
+
+	if (!wPreferences.fuse_window_icons)
+		return;
+
+	wapp = wApplicationOf(wwin->main_window);
+
+	if (!fusedIconAppliesToWindow(wPreferences.fuse_window_icons,
+				      wwin->transient_for != None
+				      && wwin->transient_for != wwin->screen_ptr->root_win,
+				      wwin->flags.net_handle_icon,
+				      WFLAGP(wwin, no_appicon),
+				      WFLAGP(wwin, no_miniaturizable))) {
+		if (wapp)
+			fusedGroupUpdateForApplication(wapp);
+		return;
+	}
+
+	if (wwin->icon == NULL) {
+		if (!wwin->flags.icon_moved)
+			PlaceIcon(wwin->screen_ptr, &wwin->icon_x, &wwin->icon_y, wGetHeadForWindow(wwin));
+
+		wwin->icon = icon_create_for_wwindow(wwin);
+		wIconSetupFused(wwin->icon);
+		wwin->icon->mapped = 0;
+		AddToStackList(wwin->icon->core);
+		wLowerFrame(wwin->icon->core);
+	}
+
+	if (!fusedGroupIsActive(wapp)
+	    && (wwin->frame->workspace == wwin->screen_ptr->current_workspace
+		|| IS_OMNIPRESENT(wwin) || wPreferences.sticky_icons)) {
+		wwin->icon->mapped = 1;
+		XMapWindow(dpy, wwin->icon->core->window);
+	}
+
+	if (wapp)
+		fusedGroupUpdateForApplication(wapp);
+}
+
 void wWindowMap(WWindow *wwin)
 {
+	wWindowUpdateFusedIcon(wwin);
+
 	XMapWindow(dpy, wwin->frame->core->window);
 	if (!wwin->flags.shaded) {
 		/* window will be remapped when getting MapNotify */
@@ -1781,6 +1851,8 @@ void wWindowMap(WWindow *wwin)
 
 		wwin->flags.mapped = 1;
 	}
+
+	captureWindowPreview(wwin);
 }
 
 void wWindowUnmap(WWindow *wwin)
@@ -2108,33 +2180,36 @@ void wWindowChangeWorkspace(WWindow *wwin, int workspace)
 	if (workspace != scr->current_workspace) {
 		/* Sent to other workspace. Unmap window */
 		if ((wwin->flags.mapped
-		     || wwin->flags.shaded || (wwin->flags.miniaturized && !wPreferences.sticky_icons))
+		     || wwin->flags.shaded
+		     || ((wwin->flags.miniaturized || wPreferences.fuse_window_icons)
+			 && !wPreferences.sticky_icons))
 		    && !IS_OMNIPRESENT(wwin) && !wwin->flags.changing_workspace) {
 
 			wapp = wApplicationOf(wwin->main_window);
 			if (wapp)
 				wapp->last_workspace = workspace;
 
-			if (wwin->flags.miniaturized) {
-				if (wwin->icon) {
-					XUnmapWindow(dpy, wwin->icon->core->window);
-					wwin->icon->mapped = 0;
-				}
-			} else {
+			if (wwin->icon && (wwin->flags.miniaturized || wPreferences.fuse_window_icons)) {
+				XUnmapWindow(dpy, wwin->icon->core->window);
+				wwin->icon->mapped = 0;
+			}
+
+			if (!wwin->flags.miniaturized) {
 				unmap = 1;
 				wSetFocusTo(scr, NULL);
 			}
 		}
 	} else {
 		/* brought to current workspace. Map window */
-		if (wwin->flags.miniaturized && !wPreferences.sticky_icons) {
-			if (wwin->icon) {
-				XMapWindow(dpy, wwin->icon->core->window);
-				wwin->icon->mapped = 1;
-			}
-		} else if (!wwin->flags.mapped && !(wwin->flags.miniaturized || wwin->flags.hidden)) {
-			wWindowMap(wwin);
+		if (wwin->icon && (wwin->flags.miniaturized || wPreferences.fuse_window_icons)
+		    && !wPreferences.sticky_icons
+		    && !fusedGroupIsActive(wApplicationOf(wwin->main_window))) {
+			XMapWindow(dpy, wwin->icon->core->window);
+			wwin->icon->mapped = 1;
 		}
+
+		if (!wwin->flags.mapped && !(wwin->flags.miniaturized || wwin->flags.hidden))
+			wWindowMap(wwin);
 	}
 	if (!IS_OMNIPRESENT(wwin)) {
 		int oldWorkspace = wwin->frame->workspace;
@@ -2144,6 +2219,13 @@ void wWindowChangeWorkspace(WWindow *wwin, int workspace)
 
 	if (unmap)
 		wWindowUnmap(wwin);
+
+	if (wPreferences.fuse_window_icons) {
+		WApplication *group_app = wApplicationOf(wwin->main_window);
+
+		if (group_app)
+			fusedGroupUpdateForApplication(group_app);
+	}
 }
 
 void wWindowChangeWorkspaceRelative(WWindow *wwin, int amount)

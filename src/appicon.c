@@ -159,7 +159,8 @@ void create_appicon_for_application(WApplication *wapp, WWindow *wwin)
 		wIconUpdate(wapp->app_icon->icon);
 
 		/* Now, paint the icon */
-		if (!WFLAGP(wapp->main_window_desc, no_appicon))
+		if (!WFLAGP(wapp->main_window_desc, no_appicon) &&
+		    (!wPreferences.fuse_window_icons || wapp->app_icon->docked))
 			paint_app_icon(wapp);
 	}
 
@@ -461,7 +462,7 @@ void save_appicon(WAppIcon *aicon)
 #define canBeDocked(wwin)  ((wwin) && ((wwin)->wm_class||(wwin)->wm_instance))
 
 /* main_window may not have the full command line; try to find one which does */
-static void relaunchApplication(WApplication *wapp)
+void relaunchApplication(WApplication *wapp)
 {
 	WScreen *scr;
 	WWindow *wlist, *next;
@@ -603,7 +604,7 @@ static void killCallback(WMenu * menu, WMenuEntry * entry)
 	WCHANGE_STATE(WSTATE_NORMAL);
 }
 
-static WMenu *createApplicationMenu(WScreen *scr)
+WMenu *createApplicationMenu(WScreen *scr)
 {
 	WMenu *menu;
 
@@ -617,7 +618,7 @@ static WMenu *createApplicationMenu(WScreen *scr)
 	return menu;
 }
 
-static void openApplicationMenu(WApplication * wapp, int x, int y)
+void openApplicationMenu(WApplication * wapp, int x, int y)
 {
 	WMenu *menu;
 	WScreen *scr = wapp->main_window_desc->screen_ptr;

@@ -44,6 +44,16 @@ static struct expert_option {
 	{ N_("Disable miniwindows (icons for minimized windows). For use with KDE/GNOME."),
 	  /* default: */ False, OPTION_WMAKER, "DisableMiniwindows" },
 
+	{ N_("One icon per window instead of per application (off: one icon per application "
+	      "and a miniwindow per minimized window)."),
+	  /* default: */ True, OPTION_WMAKER, "FuseWindowIcons" },
+
+	{ N_("Group windows of one application behind a single group icon (off: one icon per window)."),
+	  /* default: */ True, OPTION_WMAKER, "FuseWindowIconGrouping" },
+
+	{ N_("Number of windows above which grouping replaces the per-window icons (integer, minimum 1)."),
+	  /* default: */ 10, OPTION_WMAKER_INT, "FuseWindowIconGroupThreshold" },
+
 	{ N_("Ignore decoration hints for GTK applications."),
 	  /* default: */ False, OPTION_WMAKER, "IgnoreGtkHints" },
 

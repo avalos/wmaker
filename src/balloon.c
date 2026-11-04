@@ -635,6 +635,7 @@ void wBalloonEnteredObject(WScreen *scr, WObjDescriptor *object)
 			appiconBalloon(object);
 		break;
 	case WCLASS_MINIWINDOW:
+	case WCLASS_FUSED_WINDOW_ICON:
 		if (wPreferences.miniwin_title_balloon || wPreferences.miniwin_preview_balloon)
 			miniwindowBalloon(object);
 		break;

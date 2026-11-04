@@ -637,7 +637,7 @@ static void wNETWMShowingDesktop(WScreen *scr, Bool show)
 		int ws = scr->current_workspace;
 		WWindow **tmp;
 		for (tmp = scr->netdata->show_desktop; *tmp; ++tmp) {
-			wDeiconifyWindow(*tmp);
+			wDeiconifyWindow(*tmp, False);
 			(*tmp)->flags.net_show_desktop = 0;
 		}
 		if (ws != scr->current_workspace)
@@ -1275,7 +1275,7 @@ static void doStateAtom(WWindow *wwin, Atom state, int set, Bool init)
 			if (set)
 				wIconifyWindow(wwin);
 			else
-				wDeiconifyWindow(wwin);
+				wDeiconifyWindow(wwin, False);
 		}
 	} else if (state == net_wm_state_fullscreen) {
 		if (set == _NET_WM_STATE_TOGGLE)

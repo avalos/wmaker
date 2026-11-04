@@ -44,6 +44,7 @@
 #include "dialog.h"
 #include "stacking.h"
 #include "icon.h"
+#include "appicon.h"
 #include "xinerama.h"
 #include "winmenu.h"
 
@@ -267,7 +268,7 @@ static void execMenuCommand(WMenu * menu, WMenuEntry * entry)
 
 	case MC_MINIATURIZE:
 		if (wwin->flags.miniaturized) {
-			wDeiconifyWindow(wwin);
+			wDeiconifyWindow(wwin, False);
 		} else {
 			if (wwin->protocols.MINIATURIZE_WINDOW) {
 				wClientSendProtocol(wwin, w_global.atom.gnustep.wm_miniaturize_window,
@@ -841,6 +842,73 @@ void OpenMiniwindowMenu(WWindow * wwin, int x, int y)
 		return;
 
 	x -= menu->frame->core->width / 2;
+
+	wMenuMapAt(menu, x, y, False);
+}
+
+static void raiseWindowFromMenu(WMenu *menu, WMenuEntry *entry)
+{
+	WWindow *wwin = (WWindow *) entry->clientdata;
+
+	(void) menu;
+
+	wRaiseFrame(wwin->frame->core);
+	wSetFocusTo(wwin->screen_ptr, wwin);
+}
+
+static void addWindowIconMenuEntries(WMenu *menu)
+{
+	WMenuEntry *entry;
+
+	wMenuAddCallback(menu, "", NULL, NULL);
+	wMenuAddCallback(menu, _("Raise"), raiseWindowFromMenu, NULL);
+
+	entry = wMenuAddCallback(menu, _("Move"), execMenuCommand, NULL);
+	entry->order = MC_MOVERESIZE;
+
+	entry = wMenuAddCallback(menu, _("Miniaturize"), execMenuCommand, NULL);
+	entry->order = MC_MINIATURIZE;
+
+	entry = wMenuAddCallback(menu, _("Close"), execMenuCommand, NULL);
+	entry->order = MC_CLOSE;
+}
+
+void OpenWindowIconMenu(WWindow *wwin, int x, int y)
+{
+	WScreen *scr = wwin->screen_ptr;
+	WApplication *wapp = wApplicationOf(wwin->main_window);
+	WMenu *menu;
+	int i;
+
+	if (!wapp)
+		return;
+
+	if (!scr->fused_icon_menu) {
+		scr->fused_icon_menu = createApplicationMenu(scr);
+		wfree(scr->fused_icon_menu->entries[1]->text);
+		addWindowIconMenuEntries(scr->fused_icon_menu);
+	}
+
+	menu = scr->fused_icon_menu;
+
+	if (wapp->flags.hidden)
+		menu->entries[1]->text = _("Unhide");
+	else
+		menu->entries[1]->text = _("Hide");
+
+	for (i = 0; i < 5; i++)
+		menu->entries[i]->clientdata = wapp;
+	for (i = 6; i < menu->entry_no; i++)
+		menu->entries[i]->clientdata = wwin;
+
+	menu->flags.realized = 0;
+	wMenuRealize(menu);
+
+	x -= menu->frame->core->width / 2;
+	if (x + menu->frame->core->width > scr->scr_width)
+		x = scr->scr_width - menu->frame->core->width;
+	if (x < 0)
+		x = 0;
 
 	wMenuMapAt(menu, x, y, False);
 }
